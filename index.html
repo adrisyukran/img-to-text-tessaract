@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image to Text Converter - Tesseract OCR</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📷 Image to Text Converter</h1>
+            <p>Upload an image or paste from clipboard (Ctrl+V)</p>
+        </header>
+
+        <main>
+            <!-- Image Input Section -->
+            <section class="input-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <svg class="upload-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p class="upload-text">Click to select image or paste from clipboard</p>
+                        <p class="upload-hint">Supports: JPG, PNG, BMP, GIF</p>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                </div>
+
+                <!-- Image Preview -->
+                <div class="preview-container" id="previewContainer" style="display: none;">
+                    <div class="preview-header">
+                        <span>Image Preview</span>
+                        <button class="btn-clear" id="clearBtn">Clear</button>
+                    </div>
+                    <img id="imagePreview" alt="Preview">
+                </div>
+            </section>
+
+            <!-- Processing Status -->
+            <div class="status-section" id="statusSection" style="display: none;">
+                <div class="status-content">
+                    <div class="loader"></div>
+                    <p id="statusText">Processing image...</p>
+                </div>
+            </div>
+
+            <!-- Text Output Section -->
+            <section class="output-section" id="outputSection" style="display: none;">
+                <div class="output-header">
+                    <h2>Extracted Text</h2>
+                    <button class="btn-copy" id="copyBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        Copy
+                    </button>
+                </div>
+                <textarea id="outputText" readonly placeholder="Extracted text will appear here..."></textarea>
+            </section>
+        </main>
+
+        <footer>
+            <p>Powered by <a href="https://tesseract.projectnaptha.com/" target="_blank">Tesseract.js</a></p>
+        </footer>
+    </div>
+
+    <!-- Load Tesseract.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
