@@ -9,6 +9,15 @@ const statusText = document.getElementById('statusText');
 const outputSection = document.getElementById('outputSection');
 const outputText = document.getElementById('outputText');
 const copyBtn = document.getElementById('copyBtn');
+const enhanceBtn = document.getElementById('enhanceBtn');
+const undoBtn = document.getElementById('undoBtn');
+
+// Token Usage Elements
+const tokenUsage = document.getElementById('tokenUsage');
+const inputTokensEl = document.getElementById('inputTokens');
+const outputTokensEl = document.getElementById('outputTokens');
+const totalTokensEl = document.getElementById('totalTokens');
+const tokenCostEl = document.getElementById('tokenCost');
 
 // Settings Modal Elements
 const settingsBtn = document.getElementById('settingsBtn');
@@ -23,6 +32,9 @@ const statusMessage = document.getElementById('statusMessage');
 // State
 let currentImage = null;
 let isTestingConnection = false;
+let originalOcrText = null;
+let isEnhancing = false;
+let isTextEnhanced = false;
 
 // Initialize event listeners
 function init() {
@@ -45,6 +57,10 @@ function init() {
     
     // Copy button
     copyBtn.addEventListener('click', copyToClipboard);
+
+    // AI buttons
+    enhanceBtn.addEventListener('click', enhanceText);
+    undoBtn.addEventListener('click', undoEnhance);
 
     // Settings modal
     settingsBtn.addEventListener('click', openSettingsModal);
@@ -181,8 +197,17 @@ function displayResults(text) {
     statusSection.style.display = 'none';
     outputSection.style.display = 'block';
     
+    // Reset AI-related state
+    originalOcrText = null;
+    isTextEnhanced = false;
+    outputSection.classList.remove('enhanced');
+    undoBtn.style.display = 'none';
+    tokenUsage.style.display = 'none';
+    updateEnhanceButtonState();
+    
     if (text.trim()) {
         outputText.value = text;
+        originalOcrText = text;
     } else {
         outputText.value = 'No text detected in the image.';
     }
@@ -228,6 +253,14 @@ function resetApp() {
     outputSection.style.display = 'none';
     uploadArea.style.display = 'block';
     outputText.value = '';
+    
+    // Reset AI state
+    originalOcrText = null;
+    isTextEnhanced = false;
+    isEnhancing = false;
+    outputSection.classList.remove('enhanced');
+    undoBtn.style.display = 'none';
+    tokenUsage.style.display = 'none';
 }
 
 // Show error message
@@ -307,6 +340,92 @@ function updateApiKeyStatus() {
         statusDot.className = 'status-dot';
         statusMessage.textContent = 'No API key configured';
     }
+}
+
+// AI Enhancement Functions
+function updateEnhanceButtonState() {
+    const hasText = outputText.value.trim() && outputText.value !== 'No text detected in the image.';
+    const hasApiKey = window.AIService.isApiKeyConfigured();
+    
+    enhanceBtn.disabled = !hasText || !hasApiKey || isEnhancing || isTextEnhanced;
+    
+    if (!hasApiKey) {
+        enhanceBtn.title = 'Please configure your API key in Settings first';
+    } else if (isTextEnhanced) {
+        enhanceBtn.title = 'Text already enhanced';
+    } else {
+        enhanceBtn.title = 'Enhance text with AI';
+    }
+}
+
+async function enhanceText() {
+    if (isEnhancing || !originalOcrText) return;
+    
+    // Check for API key
+    if (!window.AIService.isApiKeyConfigured()) {
+        showError('Please add your Gemini API key in Settings first');
+        openSettingsModal();
+        return;
+    }
+    
+    isEnhancing = true;
+    enhanceBtn.classList.add('loading');
+    enhanceBtn.querySelector('.btn-text').textContent = 'Enhancing';
+    enhanceBtn.disabled = true;
+    
+    try {
+        const result = await window.AIService.cleanupText(originalOcrText);
+        
+        // Update text
+        outputText.value = result.text;
+        isTextEnhanced = true;
+        
+        // Show enhanced indicator
+        outputSection.classList.add('enhanced');
+        
+        // Show undo button
+        undoBtn.style.display = 'flex';
+        
+        // Update token usage display
+        updateTokenUsage(result.usage);
+        
+        // Show success feedback
+        enhanceBtn.querySelector('.btn-text').textContent = 'Enhanced ✓';
+        
+    } catch (error) {
+        console.error('Enhance Error:', error);
+        showError(error.message || 'Failed to enhance text');
+        enhanceBtn.querySelector('.btn-text').textContent = 'Enhance';
+    } finally {
+        isEnhancing = false;
+        enhanceBtn.classList.remove('loading');
+        updateEnhanceButtonState();
+    }
+}
+
+function undoEnhance() {
+    if (!originalOcrText) return;
+    
+    outputText.value = originalOcrText;
+    isTextEnhanced = false;
+    outputSection.classList.remove('enhanced');
+    undoBtn.style.display = 'none';
+    tokenUsage.style.display = 'none';
+    
+    // Reset enhance button
+    enhanceBtn.querySelector('.btn-text').textContent = 'Enhance';
+    updateEnhanceButtonState();
+}
+
+function updateTokenUsage(usage) {
+    if (!usage) return;
+    
+    tokenUsage.style.display = 'block';
+    
+    inputTokensEl.textContent = window.AIService.formatTokenCount(usage.inputTokens);
+    outputTokensEl.textContent = window.AIService.formatTokenCount(usage.outputTokens);
+    totalTokensEl.textContent = window.AIService.formatTokenCount(usage.totalTokens);
+    tokenCostEl.textContent = usage.cost.formatted;
 }
 
 // Initialize the app

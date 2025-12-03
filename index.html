@@ -61,15 +61,59 @@
             <section class="output-section" id="outputSection" style="display: none;">
                 <div class="output-header">
                     <h2>Extracted Text</h2>
-                    <button class="btn-copy" id="copyBtn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                        </svg>
-                        Copy
-                    </button>
+                    <div class="output-actions">
+                        <button class="btn-copy" id="copyBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            Copy
+                        </button>
+                        <button class="btn-enhance" id="enhanceBtn" title="Enhance text with AI">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z"></path>
+                            </svg>
+                            <span class="btn-text">Enhance</span>
+                        </button>
+                        <button class="btn-undo" id="undoBtn" style="display: none;" title="Revert to original OCR text">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 7v6h6"></path>
+                                <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+                            </svg>
+                            Undo
+                        </button>
+                    </div>
                 </div>
                 <textarea id="outputText" readonly placeholder="Extracted text will appear here..."></textarea>
+                
+                <!-- Token Usage Display -->
+                <div class="token-usage" id="tokenUsage" style="display: none;">
+                    <div class="token-usage-header">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 6v6l4 2"></path>
+                        </svg>
+                        <span>AI Usage</span>
+                    </div>
+                    <div class="token-usage-details">
+                        <div class="token-stat">
+                            <span class="token-label">Input</span>
+                            <span class="token-value" id="inputTokens">0</span>
+                        </div>
+                        <div class="token-stat">
+                            <span class="token-label">Output</span>
+                            <span class="token-value" id="outputTokens">0</span>
+                        </div>
+                        <div class="token-stat">
+                            <span class="token-label">Total</span>
+                            <span class="token-value" id="totalTokens">0</span>
+                        </div>
+                        <div class="token-stat cost">
+                            <span class="token-label">Cost</span>
+                            <span class="token-value" id="tokenCost">Free</span>
+                        </div>
+                    </div>
+                </div>
             </section>
         </main>
 
