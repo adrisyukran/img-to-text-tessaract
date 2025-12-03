@@ -279,6 +279,54 @@ main {
     height: 20px;
 }
 
+/* Summarise Button */
+.btn-summarise {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-summarise:hover:not(:disabled) {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-summarise:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.btn-summarise:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-summarise.loading {
+    pointer-events: none;
+}
+
+.btn-summarise.loading .btn-text::after {
+    content: '...';
+    animation: ellipsis 1.5s infinite;
+}
+
+.btn-summarise svg {
+    width: 20px;
+    height: 20px;
+}
+
+.btn-summarise.loading svg {
+    animation: pulse 1s ease-in-out infinite;
+}
+
 /* Enhance Button */
 .btn-enhance {
     display: flex;
@@ -425,6 +473,124 @@ main {
     content: ' ✨';
 }
 
+/* Summary Section */
+.summary-section {
+    margin-top: 20px;
+    border: 2px solid #e0e5f0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+}
+
+.summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.summary-header:hover {
+    opacity: 0.95;
+}
+
+.summary-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.summary-title svg {
+    opacity: 0.9;
+}
+
+.summary-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-copy-summary,
+.btn-toggle-summary {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-copy-summary:hover,
+.btn-toggle-summary:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.btn-toggle-summary svg {
+    transition: transform 0.3s ease;
+}
+
+.summary-section.collapsed .btn-toggle-summary svg {
+    transform: rotate(-90deg);
+}
+
+.summary-content {
+    padding: 18px;
+    background: #f8f9ff;
+    max-height: 400px;
+    overflow-y: auto;
+    transition: all 0.3s ease;
+}
+
+.summary-section.collapsed .summary-content {
+    display: none;
+}
+
+.summary-text {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: #333;
+}
+
+.summary-text p {
+    margin-bottom: 12px;
+}
+
+.summary-text strong {
+    color: #667eea;
+}
+
+.summary-text ul {
+    margin: 12px 0;
+    padding-left: 20px;
+}
+
+.summary-text li {
+    margin-bottom: 8px;
+}
+
+/* Summary loading state */
+.summary-section.loading .summary-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+}
+
+.summary-section.loading .summary-text {
+    color: #667eea;
+    font-weight: 500;
+}
+
 #outputText {
     width: 100%;
     min-height: 200px;
@@ -491,12 +657,15 @@ footer a:hover {
 
     .output-actions {
         width: 100%;
+        flex-wrap: wrap;
     }
 
     .btn-copy,
     .btn-enhance,
+    .btn-summarise,
     .btn-undo {
         flex: 1;
+        min-width: 100px;
         justify-content: center;
     }
 
@@ -506,6 +675,14 @@ footer a:hover {
 
     .token-stat {
         min-width: 60px;
+    }
+
+    .summary-header {
+        padding: 12px 14px;
+    }
+
+    .summary-content {
+        padding: 14px;
     }
 }
 
