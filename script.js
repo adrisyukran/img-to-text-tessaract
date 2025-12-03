@@ -10,8 +10,19 @@ const outputSection = document.getElementById('outputSection');
 const outputText = document.getElementById('outputText');
 const copyBtn = document.getElementById('copyBtn');
 
+// Settings Modal Elements
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsModal = document.getElementById('settingsModal');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const cancelModalBtn = document.getElementById('cancelModalBtn');
+const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+const apiKeyInput = document.getElementById('apiKeyInput');
+const statusDot = document.getElementById('statusDot');
+const statusMessage = document.getElementById('statusMessage');
+
 // State
 let currentImage = null;
+let isTestingConnection = false;
 
 // Initialize event listeners
 function init() {
@@ -34,6 +45,29 @@ function init() {
     
     // Copy button
     copyBtn.addEventListener('click', copyToClipboard);
+
+    // Settings modal
+    settingsBtn.addEventListener('click', openSettingsModal);
+    closeModalBtn.addEventListener('click', closeSettingsModal);
+    cancelModalBtn.addEventListener('click', closeSettingsModal);
+    saveApiKeyBtn.addEventListener('click', saveApiKey);
+    
+    // Close modal on overlay click
+    settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) {
+            closeSettingsModal();
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && settingsModal.classList.contains('active')) {
+            closeSettingsModal();
+        }
+    });
+
+    // Load initial API key status
+    updateApiKeyStatus();
 }
 
 // Handle file selection from input
@@ -206,6 +240,73 @@ function showError(message) {
         statusSection.style.display = 'none';
         statusText.style.color = '#667eea';
     }, 3000);
+}
+
+// Settings Modal Functions
+function openSettingsModal() {
+    const currentKey = window.AIService.getApiKey();
+    apiKeyInput.value = currentKey || '';
+    updateApiKeyStatus();
+    settingsModal.classList.add('active');
+    apiKeyInput.focus();
+}
+
+function closeSettingsModal() {
+    settingsModal.classList.remove('active');
+    apiKeyInput.value = '';
+}
+
+async function saveApiKey() {
+    const key = apiKeyInput.value.trim();
+    
+    if (!key) {
+        window.AIService.clearApiKey();
+        updateApiKeyStatus();
+        closeSettingsModal();
+        return;
+    }
+
+    // Save the key first
+    window.AIService.setApiKey(key);
+    
+    // Test the connection
+    await testApiConnection();
+}
+
+async function testApiConnection() {
+    if (isTestingConnection) return;
+    
+    isTestingConnection = true;
+    statusDot.className = 'status-dot testing';
+    statusMessage.textContent = 'Testing connection...';
+    saveApiKeyBtn.disabled = true;
+
+    try {
+        await window.AIService.testConnection();
+        statusDot.className = 'status-dot configured';
+        statusMessage.textContent = 'API key valid ✓';
+        
+        // Close modal after successful test
+        setTimeout(() => {
+            closeSettingsModal();
+        }, 1000);
+    } catch (error) {
+        statusDot.className = 'status-dot error';
+        statusMessage.textContent = error.message || 'Connection failed';
+    } finally {
+        isTestingConnection = false;
+        saveApiKeyBtn.disabled = false;
+    }
+}
+
+function updateApiKeyStatus() {
+    if (window.AIService.isApiKeyConfigured()) {
+        statusDot.className = 'status-dot configured';
+        statusMessage.textContent = 'API key configured';
+    } else {
+        statusDot.className = 'status-dot';
+        statusMessage.textContent = 'No API key configured';
+    }
 }
 
 // Initialize the app
