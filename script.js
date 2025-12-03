@@ -198,19 +198,22 @@ function displayResults(text) {
     outputSection.style.display = 'block';
     
     // Reset AI-related state
-    originalOcrText = null;
     isTextEnhanced = false;
     outputSection.classList.remove('enhanced');
     undoBtn.style.display = 'none';
     tokenUsage.style.display = 'none';
-    updateEnhanceButtonState();
     
+    // Set text values FIRST
     if (text.trim()) {
         outputText.value = text;
         originalOcrText = text;
     } else {
         outputText.value = 'No text detected in the image.';
+        originalOcrText = null;
     }
+    
+    // Update button state AFTER text is set
+    updateEnhanceButtonState();
 }
 
 // Copy text to clipboard
