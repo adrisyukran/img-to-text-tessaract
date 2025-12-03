@@ -28,6 +28,14 @@ const outputTokensEl = document.getElementById('outputTokens');
 const totalTokensEl = document.getElementById('totalTokens');
 const tokenCostEl = document.getElementById('tokenCost');
 
+// Word Count Elements
+const wordCountEl = document.getElementById('wordCount');
+const charCountEl = document.getElementById('charCount');
+const wordCountNumEl = document.getElementById('wordCountNum');
+
+// Toast Container
+const toastContainer = document.getElementById('toastContainer');
+
 // Settings Modal Elements
 const settingsBtn = document.getElementById('settingsBtn');
 const settingsModal = document.getElementById('settingsModal');
@@ -105,15 +113,49 @@ function init() {
         }
     });
 
-    // Close modal on Escape key
+    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
+        // Escape to close modal
         if (e.key === 'Escape' && settingsModal.classList.contains('active')) {
             closeSettingsModal();
+            return;
+        }
+        
+        // Only handle shortcuts when output is visible and modal is not open
+        if (outputSection.style.display === 'none' || settingsModal.classList.contains('active')) {
+            return;
+        }
+        
+        // Ctrl+E for Enhance
+        if (e.ctrlKey && e.key === 'e') {
+            e.preventDefault();
+            if (!enhanceBtn.disabled) {
+                enhanceText();
+            }
+        }
+        
+        // Ctrl+Shift+S for Summarise
+        if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+            e.preventDefault();
+            if (!summariseBtn.disabled) {
+                summariseText();
+            }
+        }
+        
+        // Ctrl+Shift+C for Copy
+        if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+            e.preventDefault();
+            copyToClipboard();
         }
     });
 
     // Load initial API key status
     updateApiKeyStatus();
+    
+    // Update button titles with keyboard shortcuts
+    enhanceBtn.title = 'Enhance text with AI (Ctrl+E)';
+    summariseBtn.title = 'Summarise text with AI (Ctrl+Shift+S)';
+    copyBtn.title = 'Copy to clipboard (Ctrl+Shift+C)';
 }
 
 // Handle file selection from input
@@ -251,6 +293,9 @@ function displayResults(text) {
         originalOcrText = null;
     }
     
+    // Update word count
+    updateWordCount();
+    
     // Update button states AFTER text is set
     updateEnhanceButtonState();
     updateSummariseButtonState();
@@ -324,6 +369,54 @@ function showError(message) {
         statusSection.style.display = 'none';
         statusText.style.color = '#667eea';
     }, 3000);
+    
+    // Also show as toast for better visibility
+    showToast('Error', message, 'error');
+}
+
+// Toast Notification System
+function showToast(title, message, type = 'info', duration = 4000) {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const iconSvg = type === 'success' 
+        ? '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>'
+        : type === 'error'
+        ? '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>'
+        : '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+    
+    toast.innerHTML = `
+        ${iconSvg}
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Trigger animation
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
+    });
+    
+    // Auto remove
+    setTimeout(() => {
+        toast.classList.add('hiding');
+        setTimeout(() => {
+            toast.remove();
+        }, 400);
+    }, duration);
+}
+
+// Word Count Functions
+function updateWordCount() {
+    const text = outputText.value || '';
+    const charCount = text.length;
+    const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+    
+    charCountEl.textContent = charCount.toLocaleString();
+    wordCountNumEl.textContent = wordCount.toLocaleString();
 }
 
 // Settings Modal Functions
@@ -429,8 +522,14 @@ async function enhanceText() {
     
     // Check for API key
     if (!window.AIService.isApiKeyConfigured()) {
-        showError('Please add your Gemini API key in Settings first');
+        showToast('API Key Required', 'Please add your Gemini API key in Settings first', 'info');
         openSettingsModal();
+        return;
+    }
+    
+    // Check for minimum text length
+    if (originalOcrText.trim().length < 10) {
+        showToast('Text Too Short', 'Need at least 10 characters to enhance', 'info');
         return;
     }
     
@@ -455,12 +554,16 @@ async function enhanceText() {
         // Update token usage display (cumulative)
         addToTokenUsage(result.usage);
         
+        // Update word count
+        updateWordCount();
+        
         // Show success feedback
         enhanceBtn.querySelector('.btn-text').textContent = 'Enhanced ✓';
+        showToast('Text Enhanced', 'OCR errors have been cleaned up', 'success');
         
     } catch (error) {
         console.error('Enhance Error:', error);
-        showError(error.message || 'Failed to enhance text');
+        showToast('Enhancement Failed', error.message || 'Failed to enhance text', 'error');
         enhanceBtn.querySelector('.btn-text').textContent = 'Enhance';
     } finally {
         isEnhancing = false;
@@ -477,9 +580,14 @@ function undoEnhance() {
     outputSection.classList.remove('enhanced');
     undoBtn.style.display = 'none';
     
+    // Update word count
+    updateWordCount();
+    
     // Reset enhance button
     enhanceBtn.querySelector('.btn-text').textContent = 'Enhance';
     updateEnhanceButtonState();
+    
+    showToast('Reverted', 'Text restored to original OCR output', 'info');
 }
 
 // Summarisation Functions
@@ -491,8 +599,14 @@ async function summariseText() {
     
     // Check for API key
     if (!window.AIService.isApiKeyConfigured()) {
-        showError('Please add your Gemini API key in Settings first');
+        showToast('API Key Required', 'Please add your Gemini API key in Settings first', 'info');
         openSettingsModal();
+        return;
+    }
+    
+    // Check for minimum text length
+    if (textToSummarise.length < 50) {
+        showToast('Text Too Short', 'Need at least 50 characters to summarise effectively', 'info');
         return;
     }
     
@@ -522,10 +636,11 @@ async function summariseText() {
         
         // Show success feedback
         summariseBtn.querySelector('.btn-text').textContent = 'Summarised ✓';
+        showToast('Summary Generated', 'Text has been summarised successfully', 'success');
         
     } catch (error) {
         console.error('Summarise Error:', error);
-        showError(error.message || 'Failed to summarise text');
+        showToast('Summarisation Failed', error.message || 'Failed to summarise text', 'error');
         summariseBtn.querySelector('.btn-text').textContent = 'Summarise';
         summarySection.style.display = 'none';
         hasSummary = false;
@@ -581,9 +696,11 @@ async function copySummary() {
             copySummaryBtn.innerHTML = originalHTML;
         }, 2000);
         
+        showToast('Copied', 'Summary copied to clipboard', 'success', 2000);
+        
     } catch (error) {
         console.error('Copy Summary Error:', error);
-        showError('Failed to copy summary');
+        showToast('Copy Failed', 'Failed to copy summary', 'error');
     }
 }
 

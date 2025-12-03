@@ -97,6 +97,11 @@
                 </div>
                 <textarea id="outputText" readonly placeholder="Extracted text will appear here..."></textarea>
                 
+                <!-- Word Count Display -->
+                <div class="word-count" id="wordCount">
+                    <span id="charCount">0</span> characters · <span id="wordCountNum">0</span> words
+                </div>
+                
                 <!-- Token Usage Display -->
                 <div class="token-usage" id="tokenUsage" style="display: none;">
                     <div class="token-usage-header">
@@ -191,6 +196,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <!-- Load Tesseract.js from CDN -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
