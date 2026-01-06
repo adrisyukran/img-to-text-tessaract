@@ -10,8 +10,13 @@ const DEFAULT_CONFIG = {
         baseUrl: 'https://nano-gpt.com/api/v1',
         model: 'chatgpt-4o-latest',
         rateLimit: {
-            maxRequests: 3,
+            maxRequests: 14,
             windowHours: 24
+        },
+        // Pricing per 1M tokens - $0.10/1M input, $0.20/1M output
+        pricing: {
+            input: 0.10,
+            output: 0.20
         }
     },
     storageKeys: {
