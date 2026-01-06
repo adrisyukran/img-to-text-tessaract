@@ -1,6 +1,6 @@
 /**
- * AI Service Module - Gemini 2.5 Flash Integration
- * Handles all AI-related API calls and configuration
+ * AI Service Module - Multi-AI Integration
+ * Handles all AI-related API calls and configuration for both Gemini and OpenAI-compatible endpoints
  */
 
 // API Configuration
@@ -267,6 +267,301 @@ function formatTokenCount(tokens) {
     return tokens.toString();
 }
 
+// OpenAI-Compatible API Integration with Rate Limiting
+const OPENAI_CONFIG = window.APP_CONFIG.openaiCompatible;
+const STORAGE_KEYS = window.APP_CONFIG.storageKeys;
+
+/**
+ * Get OpenAI-compatible API configuration
+ * @returns {object} Configuration with apiKey, baseUrl, and model
+ */
+function getOpenAIConfig() {
+    // Priority: localStorage > environment variables > defaults
+    return {
+        apiKey: localStorage.getItem(STORAGE_KEYS.openaiApiKey) || OPENAI_CONFIG.apiKey,
+        baseUrl: localStorage.getItem(STORAGE_KEYS.openaiBaseUrl) || OPENAI_CONFIG.baseUrl,
+        model: localStorage.getItem(STORAGE_KEYS.openaiModel) || OPENAI_CONFIG.model
+    };
+}
+
+/**
+ * Save OpenAI-compatible API configuration
+ * @param {string} apiKey - API key
+ * @param {string} baseUrl - Base URL (optional)
+ * @param {string} model - Model name (optional)
+ */
+function setOpenAIConfig(apiKey, baseUrl = null, model = null) {
+    if (apiKey && apiKey.trim()) {
+        localStorage.setItem(STORAGE_KEYS.openaiApiKey, apiKey.trim());
+    } else {
+        localStorage.removeItem(STORAGE_KEYS.openaiApiKey);
+    }
+    
+    if (baseUrl !== null) {
+        if (baseUrl.trim()) {
+            localStorage.setItem(STORAGE_KEYS.openaiBaseUrl, baseUrl.trim());
+        } else {
+            localStorage.removeItem(STORAGE_KEYS.openaiBaseUrl);
+        }
+    }
+    
+    if (model !== null) {
+        if (model.trim()) {
+            localStorage.setItem(STORAGE_KEYS.openaiModel, model.trim());
+        } else {
+            localStorage.removeItem(STORAGE_KEYS.openaiModel);
+        }
+    }
+}
+
+/**
+ * Check if OpenAI-compatible API is configured
+ * @returns {boolean} True if API key exists
+ */
+function isOpenAIConfigured() {
+    const config = getOpenAIConfig();
+    return config.apiKey !== null && config.apiKey.trim().length > 0;
+}
+
+/**
+ * Clear OpenAI-compatible API configuration
+ */
+function clearOpenAIConfig() {
+    localStorage.removeItem(STORAGE_KEYS.openaiApiKey);
+    localStorage.removeItem(STORAGE_KEYS.openaiBaseUrl);
+    localStorage.removeItem(STORAGE_KEYS.openaiModel);
+}
+
+/**
+ * Get request history for rate limiting
+ * @returns {Array} Array of timestamp numbers
+ */
+function getRequestHistory() {
+    const history = localStorage.getItem(STORAGE_KEYS.openaiRequests);
+    if (!history) return [];
+    try {
+        return JSON.parse(history);
+    } catch (e) {
+        return [];
+    }
+}
+
+/**
+ * Save request history for rate limiting
+ * @param {Array} history - Array of timestamp numbers
+ */
+function saveRequestHistory(history) {
+    localStorage.setItem(STORAGE_KEYS.openaiRequests, JSON.stringify(history));
+}
+
+/**
+ * Check if rate limit has been exceeded
+ * @returns {object} Object with {exceeded: boolean, remaining: number, resetTime: Date}
+ */
+function checkRateLimit() {
+    const history = getRequestHistory();
+    const now = Date.now();
+    const windowMs = OPENAI_CONFIG.rateLimit.windowHours * 60 * 60 * 1000; // Convert hours to milliseconds
+    const windowStart = now - windowMs;
+    
+    // Filter out requests older than the window
+    const recentRequests = history.filter(timestamp => timestamp > windowStart);
+    
+    const remaining = Math.max(0, OPENAI_CONFIG.rateLimit.maxRequests - recentRequests.length);
+    const exceeded = remaining <= 0;
+    
+    // Calculate when the oldest request will expire
+    let resetTime = new Date(now + windowMs);
+    if (recentRequests.length > 0) {
+        const oldestRequest = Math.min(...recentRequests);
+        resetTime = new Date(oldestRequest + windowMs);
+    }
+    
+    return {
+        exceeded,
+        remaining,
+        resetTime,
+        used: recentRequests.length
+    };
+}
+
+/**
+ * Record a request for rate limiting
+ */
+function recordRequest() {
+    const history = getRequestHistory();
+    const now = Date.now();
+    const windowMs = OPENAI_CONFIG.rateLimit.windowHours * 60 * 60 * 1000;
+    const windowStart = now - windowMs;
+    
+    // Filter out old requests and add the new one
+    const recentRequests = history.filter(timestamp => timestamp > windowStart);
+    recentRequests.push(now);
+    
+    saveRequestHistory(recentRequests);
+}
+
+/**
+ * Call the OpenAI-compatible API with a prompt and text content
+ * @param {string} systemPrompt - The system instruction
+ * @param {string} userContent - The user's text content
+ * @param {number} maxTokens - Maximum tokens for response
+ * @returns {Promise<object>} Object with text and usage metadata
+ * @throws {Error} If API call fails or rate limit exceeded
+ */
+async function callOpenAICompatible(systemPrompt, userContent, maxTokens = 2048) {
+    const config = getOpenAIConfig();
+    
+    if (!config.apiKey) {
+        throw new Error('OpenAI-compatible API key not configured.');
+    }
+
+    if (!userContent || userContent.trim().length === 0) {
+        throw new Error('No text content provided.');
+    }
+
+    // Check rate limit
+    const rateLimit = checkRateLimit();
+    if (rateLimit.exceeded) {
+        const resetTime = rateLimit.resetTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        throw new Error(`Rate limit exceeded. Please try again after ${resetTime}. (${OPENAI_CONFIG.rateLimit.maxRequests} requests per ${OPENAI_CONFIG.rateLimit.windowHours} hours)`);
+    }
+
+    const url = `${config.baseUrl}/chat/completions`;
+    
+    // Prepare messages for chat completion
+    const messages = [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContent }
+    ];
+    
+    const requestBody = {
+        model: config.model,
+        messages: messages,
+        max_tokens: maxTokens,
+        temperature: 0.3
+    };
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${config.apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            
+            if (response.status === 400) {
+                throw new Error('Invalid request. Please check your API configuration.');
+            } else if (response.status === 401 || response.status === 403) {
+                throw new Error('Invalid API key. Please check your OpenAI-compatible API key.');
+            } else if (response.status === 429) {
+                // Record the request even if it failed due to rate limiting
+                recordRequest();
+                throw new Error('Rate limit exceeded by the API. Please try again later.');
+            } else if (response.status >= 500) {
+                throw new Error('OpenAI-compatible API server error. Please try again later.');
+            } else {
+                throw new Error(errorData.error?.message || `API error: ${response.status}`);
+            }
+        }
+
+        const data = await response.json();
+        
+        // Record successful request for rate limiting
+        recordRequest();
+
+        // Extract text from OpenAI-compatible response
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+            const responseText = data.choices[0].message.content;
+            
+            // Extract token usage from response
+            const usage = data.usage || {};
+            const inputTokens = usage.prompt_tokens || 0;
+            const outputTokens = usage.completion_tokens || 0;
+            const totalTokens = usage.total_tokens || (inputTokens + outputTokens);
+            
+            // For OpenAI-compatible APIs, we don't have pricing info, so set to 0
+            const cost = {
+                inputCost: 0,
+                outputCost: 0,
+                totalCost: 0,
+                formatted: 'Free'
+            };
+            
+            return {
+                text: responseText,
+                usage: {
+                    inputTokens,
+                    outputTokens,
+                    totalTokens,
+                    cost
+                }
+            };
+        }
+
+        throw new Error('Unexpected API response format.');
+
+    } catch (error) {
+        // Re-throw if it's already our custom error
+        if (error.message.includes('API key') || 
+            error.message.includes('Rate limit') || 
+            error.message.includes('server error') ||
+            error.message.includes('No text content')) {
+            throw error;
+        }
+        
+        // Handle network errors
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('Network error. Please check your internet connection.');
+        }
+        
+        throw new Error(`Failed to process: ${error.message}`);
+    }
+}
+
+/**
+ * Clean up OCR text using OpenAI-compatible API
+ * @param {string} text - The OCR text to clean
+ * @returns {Promise<object>} Object with cleaned text and usage metadata
+ */
+async function cleanupTextOpenAI(text) {
+    return callOpenAICompatible(PROMPTS.cleanup, text, 2048);
+}
+
+/**
+ * Summarise text using OpenAI-compatible API
+ * @param {string} text - The text to summarise
+ * @returns {Promise<object>} Object with summary and usage metadata
+ */
+async function summariseTextOpenAI(text) {
+    return callOpenAICompatible(PROMPTS.summarise, text, 1024);
+}
+
+/**
+ * Test the OpenAI-compatible API connection
+ * @returns {Promise<boolean>} True if connection successful
+ */
+async function testOpenAIConnection() {
+    try {
+        // Check rate limit first
+        const rateLimit = checkRateLimit();
+        if (rateLimit.exceeded) {
+            const resetTime = rateLimit.resetTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            throw new Error(`Rate limit exceeded. Please try again after ${resetTime}.`);
+        }
+        
+        const result = await callOpenAICompatible('Respond with only the word "connected"', 'Test', 50);
+        return result.text.toLowerCase().includes('connected');
+    } catch (error) {
+        throw error;
+    }
+}
+
 // Export functions for use in other scripts
 window.AIService = {
     getApiKey,
@@ -280,5 +575,16 @@ window.AIService = {
     calculateCost,
     formatTokenCount,
     PROMPTS,
-    CONFIG: AI_CONFIG
+    CONFIG: AI_CONFIG,
+    
+    // OpenAI-compatible API functions
+    getOpenAIConfig,
+    setOpenAIConfig,
+    isOpenAIConfigured,
+    clearOpenAIConfig,
+    callOpenAICompatible,
+    cleanupTextOpenAI,
+    summariseTextOpenAI,
+    testOpenAIConnection,
+    checkRateLimit
 };
