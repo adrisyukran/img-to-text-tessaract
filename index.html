@@ -177,7 +177,29 @@
                 <button class="btn-close" id="closeModalBtn">&times;</button>
             </div>
             <div class="modal-body">
+                <!-- AI Model Selection -->
                 <div class="form-group">
+                    <label>AI Model Selection</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="aiModel" value="gemini" id="modelGemini" checked>
+                            <div class="radio-content">
+                                <span class="radio-label">Bring Your Own Gemini Key</span>
+                                <span class="radio-description">Use your own Google Gemini API key</span>
+                            </div>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="aiModel" value="openai" id="modelOpenAI">
+                            <div class="radio-content">
+                                <span class="radio-label">Pre-built AI Model (3 requests/day)</span>
+                                <span class="radio-description">Use built-in OpenAI-compatible model with rate limiting</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Gemini API Key -->
+                <div class="form-group" id="geminiKeyGroup">
                     <label for="apiKeyInput">Gemini API Key</label>
                     <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key" autocomplete="off">
                     <p class="form-hint">
@@ -185,6 +207,36 @@
                         <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>
                     </p>
                 </div>
+
+                <!-- OpenAI-Compatible API Configuration -->
+                <div class="form-group" id="openaiConfigGroup" style="display: none;">
+                    <div style="background: #f8f9ff; border-radius: 8px; border: 1px solid #e0e5f0; padding: 20px; text-align: center;">
+                        <h3 style="margin-top: 0; color: #333;">Pre-built AI Model</h3>
+                        <p style="color: #666; margin-bottom: 20px;">
+                            This model is configured via backend environment variables.<br>
+                            Rate limiting: 3 requests per 24 hours.
+                        </p>
+                        
+                        <!-- Rate Limit Display -->
+                        <div class="rate-limit-info" id="rateLimitInfo" style="padding: 12px; background: white; border-radius: 8px; border: 1px solid #e0e5f0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>Requests Remaining:</span>
+                                <span id="requestsRemaining">3/3</span>
+                            </div>
+                            <div style="font-size: 0.85rem; color: #666; margin-top: 4px;">
+                                Resets in <span id="resetTime">24 hours</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-hint" style="margin-top: 15px; text-align: left;">
+                            <strong>Configuration:</strong> Set these environment variables on your server:<br>
+                            <code>OPENAI_COMPATIBLE_API_KEY</code> - Your API key<br>
+                            <code>OPENAI_COMPATIBLE_BASE_URL</code> - API endpoint (optional)<br>
+                            <code>OPENAI_COMPATIBLE_MODEL</code> - Model name (optional)
+                        </div>
+                    </div>
+                </div>
+
                 <div class="api-status" id="apiStatus">
                     <span class="status-dot" id="statusDot"></span>
                     <span id="statusMessage">No API key configured</span>
@@ -202,6 +254,15 @@
 
     <!-- Load Tesseract.js from CDN -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script>
+        // Check if Tesseract is loaded
+        if (typeof Tesseract === 'undefined') {
+            console.error('Tesseract.js failed to load');
+        } else {
+            console.log('Tesseract.js loaded successfully');
+        }
+    </script>
+    <script src="config.js"></script>
     <script src="ai-service.js"></script>
     <script src="script.js"></script>
 </body>
