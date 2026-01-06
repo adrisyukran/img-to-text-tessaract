@@ -213,6 +213,56 @@ Feel free to fork, modify, and submit pull requests!
 
 For issues or questions, please open an issue on GitHub.
 
+## 🔧 Environment Variables for OpenAI-Compatible API
+
+The application now supports OpenAI-compatible APIs with rate limiting. You can configure the API key and settings through environment variables for better security:
+
+### Environment Variables
+- `OPENAI_COMPATIBLE_API_KEY` - Your OpenAI-compatible API key
+- `OPENAI_COMPATIBLE_BASE_URL` - Base URL for the API (default: https://nano-gpt.com/api/v1)
+- `OPENAI_COMPATIBLE_MODEL` - Model name (default: chatgpt-4o-latest)
+
+### Setting Environment Variables
+
+#### Development (.env file)
+Create a `.env` file in your project root:
+```bash
+OPENAI_COMPATIBLE_API_KEY=your-api-key-here
+OPENAI_COMPATIBLE_BASE_URL=https://nano-gpt.com/api/v1
+OPENAI_COMPATIBLE_MODEL=chatgpt-4o-latest
+```
+
+#### Running the Application
+Since this is a browser-based application that needs to access environment variables, you need to run it through the provided server:
+
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Start the server**:
+   ```bash
+   npm start
+   ```
+
+3. **Visit the application**:
+   Open your browser and go to `http://localhost:3000`
+
+The server will automatically inject the environment variables from your `.env` file into the browser application.
+
+#### Production Deployments
+For production deployments, set environment variables according to your platform:
+- **Heroku**: Config Vars
+- **Vercel**: Environment Variables
+- **Docker**: `-e` flag or docker-compose environment
+- **Cloud Platforms**: Platform-specific environment variable settings
+
+### Benefits
+- API keys are not exposed in the frontend
+- Centralized configuration management
+- Easy deployment across different environments
+- Rate limiting (3 requests per 24 hours) for the pre-built model
+
 ---
 
 **Made with ❤️ using Tesseract OCR & Google Gemini AI**
