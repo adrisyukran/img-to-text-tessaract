@@ -242,9 +242,11 @@ async function performOCR(imageData) {
     statusText.textContent = 'Initializing OCR...';
     
     try {
+        console.log('Starting OCR process...');
         // Create Tesseract worker
         const worker = await Tesseract.createWorker('eng', 1, {
             logger: (m) => {
+                console.log('Tesseract log:', m);
                 // Update status based on progress
                 if (m.status === 'loading tesseract core') {
                     statusText.textContent = 'Loading OCR engine...';
@@ -259,8 +261,10 @@ async function performOCR(imageData) {
             }
         });
         
+        console.log('Worker created, starting recognition...');
         // Perform OCR
         const { data: { text } } = await worker.recognize(imageData);
+        console.log('OCR completed, text extracted:', text.substring(0, 100) + '...');
         
         // Terminate worker
         await worker.terminate();
