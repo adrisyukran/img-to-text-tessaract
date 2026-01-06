@@ -485,13 +485,8 @@ async function callOpenAICompatible(systemPrompt, userContent, maxTokens = 2048)
             const outputTokens = usage.completion_tokens || 0;
             const totalTokens = usage.total_tokens || (inputTokens + outputTokens);
             
-            // For OpenAI-compatible APIs, we don't have pricing info, so set to 0
-            const cost = {
-                inputCost: 0,
-                outputCost: 0,
-                totalCost: 0,
-                formatted: 'Free'
-            };
+            // Calculate cost using the new pricing configuration
+            const cost = calculateOpenAICost(inputTokens, outputTokens);
             
             return {
                 text: responseText,
@@ -522,6 +517,27 @@ async function callOpenAICompatible(systemPrompt, userContent, maxTokens = 2048)
         
         throw new Error(`Failed to process: ${error.message}`);
     }
+}
+
+/**
+ * Calculate estimated cost for OpenAI-compatible API based on token usage
+ * @param {number} inputTokens - Number of input tokens
+ * @param {number} outputTokens - Number of output tokens
+ * @returns {object} Cost breakdown
+ */
+function calculateOpenAICost(inputTokens, outputTokens) {
+    const OPENAI_CONFIG = window.APP_CONFIG.openaiCompatible;
+    const inputCost = (inputTokens / 1000000) * OPENAI_CONFIG.pricing.input;
+    const outputCost = (outputTokens / 1000000) * OPENAI_CONFIG.pricing.output;
+    const totalCost = inputCost + outputCost;
+    
+    return {
+        inputCost,
+        outputCost,
+        totalCost,
+        // Format for display
+        formatted: totalCost < 0.0001 ? 'Free (< $0.0001)' : `$${totalCost.toFixed(6)}`
+    };
 }
 
 /**
