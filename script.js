@@ -43,6 +43,12 @@ const closeModalBtn = document.getElementById('closeModalBtn');
 const cancelModalBtn = document.getElementById('cancelModalBtn');
 const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
 const apiKeyInput = document.getElementById('apiKeyInput');
+const modelGemini = document.getElementById('modelGemini');
+const modelOpenAI = document.getElementById('modelOpenAI');
+const geminiKeyGroup = document.getElementById('geminiKeyGroup');
+const openaiConfigGroup = document.getElementById('openaiConfigGroup');
+const requestsRemaining = document.getElementById('requestsRemaining');
+const resetTime = document.getElementById('resetTime');
 const statusDot = document.getElementById('statusDot');
 const statusMessage = document.getElementById('statusMessage');
 
@@ -105,6 +111,10 @@ function init() {
     closeModalBtn.addEventListener('click', closeSettingsModal);
     cancelModalBtn.addEventListener('click', closeSettingsModal);
     saveApiKeyBtn.addEventListener('click', saveApiKey);
+    
+    // Model selection
+    modelGemini.addEventListener('change', handleModelChange);
+    modelOpenAI.addEventListener('change', handleModelChange);
     
     // Close modal on overlay click
     settingsModal.addEventListener('click', (e) => {
@@ -421,11 +431,42 @@ function updateWordCount() {
 
 // Settings Modal Functions
 function openSettingsModal() {
-    const currentKey = window.AIService.getApiKey();
-    apiKeyInput.value = currentKey || '';
-    updateApiKeyStatus();
+    // Load current settings
+    const currentGeminiKey = window.AIService.getApiKey();
+    
+    // Set Gemini key
+    apiKeyInput.value = currentGeminiKey || '';
+    
+    // Load selected model (default to Gemini)
+    const selectedModel = localStorage.getItem('selected_ai_model') || 'gemini';
+    if (selectedModel === 'openai') {
+        modelOpenAI.checked = true;
+        geminiKeyGroup.style.display = 'none';
+        openaiConfigGroup.style.display = 'block';
+    } else {
+        modelGemini.checked = true;
+        geminiKeyGroup.style.display = 'block';
+        openaiConfigGroup.style.display = 'none';
+    }
+    
+    // Update rate limit display
+    updateRateLimitDisplay();
+    
     settingsModal.classList.add('active');
     apiKeyInput.focus();
+}
+
+// Model selection change handler
+function handleModelChange() {
+    if (modelOpenAI.checked) {
+        geminiKeyGroup.style.display = 'none';
+        openaiConfigGroup.style.display = 'block';
+        localStorage.setItem('selected_ai_model', 'openai');
+    } else {
+        geminiKeyGroup.style.display = 'block';
+        openaiConfigGroup.style.display = 'none';
+        localStorage.setItem('selected_ai_model', 'gemini');
+    }
 }
 
 function closeSettingsModal() {
@@ -434,20 +475,20 @@ function closeSettingsModal() {
 }
 
 async function saveApiKey() {
-    const key = apiKeyInput.value.trim();
-    
-    if (!key) {
-        window.AIService.clearApiKey();
-        updateApiKeyStatus();
-        closeSettingsModal();
-        return;
+    // Save only Gemini API key (OpenAI-compatible is configured via environment variables only)
+    if (!modelOpenAI.checked) {
+        const geminiKey = apiKeyInput.value.trim();
+        
+        if (!geminiKey) {
+            window.AIService.clearApiKey();
+        } else {
+            window.AIService.setApiKey(geminiKey);
+        }
     }
-
-    // Save the key first
-    window.AIService.setApiKey(key);
     
-    // Test the connection
-    await testApiConnection();
+    updateApiKeyStatus();
+    updateRateLimitDisplay();
+    closeSettingsModal();
 }
 
 async function testApiConnection() {
@@ -459,14 +500,36 @@ async function testApiConnection() {
     saveApiKeyBtn.disabled = true;
 
     try {
-        await window.AIService.testConnection();
-        statusDot.className = 'status-dot configured';
-        statusMessage.textContent = 'API key valid ✓';
+        let success = false;
         
-        // Close modal after successful test
-        setTimeout(() => {
-            closeSettingsModal();
-        }, 1000);
+        if (modelOpenAI.checked) {
+            // Test OpenAI-compatible API
+            if (window.AIService.isOpenAIConfigured()) {
+                await window.AIService.testOpenAIConnection();
+                success = true;
+                statusDot.className = 'status-dot configured';
+                statusMessage.textContent = 'OpenAI-compatible API key valid ✓';
+            } else {
+                throw new Error('OpenAI-compatible API key not configured');
+            }
+        } else {
+            // Test Gemini API
+            if (window.AIService.isApiKeyConfigured()) {
+                await window.AIService.testConnection();
+                success = true;
+                statusDot.className = 'status-dot configured';
+                statusMessage.textContent = 'Gemini API key valid ✓';
+            } else {
+                throw new Error('Gemini API key not configured');
+            }
+        }
+        
+        if (success) {
+            // Close modal after successful test
+            setTimeout(() => {
+                closeSettingsModal();
+            }, 1000);
+        }
     } catch (error) {
         statusDot.className = 'status-dot error';
         statusMessage.textContent = error.message || 'Connection failed';
@@ -477,24 +540,67 @@ async function testApiConnection() {
 }
 
 function updateApiKeyStatus() {
-    if (window.AIService.isApiKeyConfigured()) {
-        statusDot.className = 'status-dot configured';
-        statusMessage.textContent = 'API key configured';
+    const selectedModel = localStorage.getItem('selected_ai_model') || 'gemini';
+    
+    if (selectedModel === 'openai') {
+        if (window.AIService.isOpenAIConfigured()) {
+            statusDot.className = 'status-dot configured';
+            statusMessage.textContent = 'OpenAI-compatible API configured';
+        } else {
+            statusDot.className = 'status-dot';
+            statusMessage.textContent = 'No OpenAI-compatible API key configured';
+        }
     } else {
-        statusDot.className = 'status-dot';
-        statusMessage.textContent = 'No API key configured';
+        if (window.AIService.isApiKeyConfigured()) {
+            statusDot.className = 'status-dot configured';
+            statusMessage.textContent = 'Gemini API key configured';
+        } else {
+            statusDot.className = 'status-dot';
+            statusMessage.textContent = 'No Gemini API key configured';
+        }
+    }
+}
+
+function updateRateLimitDisplay() {
+    if (modelOpenAI.checked) {
+        const rateLimit = window.AIService.checkRateLimit();
+        requestsRemaining.textContent = `${rateLimit.remaining}/${window.APP_CONFIG.openaiCompatible.rateLimit.maxRequests}`;
+        
+        // Calculate time until reset
+        const now = new Date();
+        const resetDate = rateLimit.resetTime;
+        const diffMs = resetDate - now;
+        const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+        const diffMinutes = Math.ceil(diffMs / (1000 * 60));
+        
+        if (diffHours > 0) {
+            resetTime.textContent = `${diffHours} hour${diffHours > 1 ? 's' : ''}`;
+        } else if (diffMinutes > 0) {
+            resetTime.textContent = `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
+        } else {
+            resetTime.textContent = 'soon';
+        }
     }
 }
 
 // AI Enhancement Functions
 function updateEnhanceButtonState() {
     const hasText = outputText.value.trim() && outputText.value !== 'No text detected in the image.';
-    const hasApiKey = window.AIService.isApiKeyConfigured();
+    
+    // Check for API key based on selected model
+    const selectedModel = localStorage.getItem('selected_ai_model') || 'gemini';
+    let hasApiKey = false;
+    
+    if (selectedModel === 'openai') {
+        hasApiKey = window.AIService.isOpenAIConfigured();
+    } else {
+        hasApiKey = window.AIService.isApiKeyConfigured();
+    }
     
     enhanceBtn.disabled = !hasText || !hasApiKey || isEnhancing || isTextEnhanced;
     
     if (!hasApiKey) {
-        enhanceBtn.title = 'Please configure your API key in Settings first';
+        enhanceBtn.title = `Please configure your ${selectedModel === 'openai' ? 'OpenAI-compatible' : 'Gemini'} API key in Settings first`;
     } else if (isTextEnhanced) {
         enhanceBtn.title = 'Text already enhanced';
     } else {
@@ -504,12 +610,21 @@ function updateEnhanceButtonState() {
 
 function updateSummariseButtonState() {
     const hasText = outputText.value.trim() && outputText.value !== 'No text detected in the image.';
-    const hasApiKey = window.AIService.isApiKeyConfigured();
+    
+    // Check for API key based on selected model
+    const selectedModel = localStorage.getItem('selected_ai_model') || 'gemini';
+    let hasApiKey = false;
+    
+    if (selectedModel === 'openai') {
+        hasApiKey = window.AIService.isOpenAIConfigured();
+    } else {
+        hasApiKey = window.AIService.isApiKeyConfigured();
+    }
     
     summariseBtn.disabled = !hasText || !hasApiKey || isSummarising || hasSummary;
     
     if (!hasApiKey) {
-        summariseBtn.title = 'Please configure your API key in Settings first';
+        summariseBtn.title = `Please configure your ${selectedModel === 'openai' ? 'OpenAI-compatible' : 'Gemini'} API key in Settings first`;
     } else if (hasSummary) {
         summariseBtn.title = 'Text already summarised';
     } else {
@@ -520,9 +635,18 @@ function updateSummariseButtonState() {
 async function enhanceText() {
     if (isEnhancing || !originalOcrText) return;
     
-    // Check for API key
-    if (!window.AIService.isApiKeyConfigured()) {
-        showToast('API Key Required', 'Please add your Gemini API key in Settings first', 'info');
+    // Check for API key based on selected model
+    const selectedModel = localStorage.getItem('selected_ai_model') || 'gemini';
+    let hasApiKey = false;
+    
+    if (selectedModel === 'openai') {
+        hasApiKey = window.AIService.isOpenAIConfigured();
+    } else {
+        hasApiKey = window.AIService.isApiKeyConfigured();
+    }
+    
+    if (!hasApiKey) {
+        showToast('API Key Required', `Please configure your ${selectedModel === 'openai' ? 'OpenAI-compatible' : 'Gemini'} API key in Settings first`, 'info');
         openSettingsModal();
         return;
     }
@@ -539,7 +663,14 @@ async function enhanceText() {
     enhanceBtn.disabled = true;
     
     try {
-        const result = await window.AIService.cleanupText(originalOcrText);
+        let result;
+        
+        // Use appropriate API based on selected model
+        if (selectedModel === 'openai') {
+            result = await window.AIService.cleanupTextOpenAI(originalOcrText);
+        } else {
+            result = await window.AIService.cleanupText(originalOcrText);
+        }
         
         // Update text
         outputText.value = result.text;
@@ -597,9 +728,18 @@ async function summariseText() {
     const textToSummarise = outputText.value.trim();
     if (!textToSummarise || textToSummarise === 'No text detected in the image.') return;
     
-    // Check for API key
-    if (!window.AIService.isApiKeyConfigured()) {
-        showToast('API Key Required', 'Please add your Gemini API key in Settings first', 'info');
+    // Check for API key based on selected model
+    const selectedModel = localStorage.getItem('selected_ai_model') || 'gemini';
+    let hasApiKey = false;
+    
+    if (selectedModel === 'openai') {
+        hasApiKey = window.AIService.isOpenAIConfigured();
+    } else {
+        hasApiKey = window.AIService.isApiKeyConfigured();
+    }
+    
+    if (!hasApiKey) {
+        showToast('API Key Required', `Please configure your ${selectedModel === 'openai' ? 'OpenAI-compatible' : 'Gemini'} API key in Settings first`, 'info');
         openSettingsModal();
         return;
     }
@@ -622,7 +762,14 @@ async function summariseText() {
     summaryText.innerHTML = '<p>Generating summary...</p>';
     
     try {
-        const result = await window.AIService.summariseText(textToSummarise);
+        let result;
+        
+        // Use appropriate API based on selected model
+        if (selectedModel === 'openai') {
+            result = await window.AIService.summariseTextOpenAI(textToSummarise);
+        } else {
+            result = await window.AIService.summariseText(textToSummarise);
+        }
         
         // Store and display summary
         currentSummary = result.text;
