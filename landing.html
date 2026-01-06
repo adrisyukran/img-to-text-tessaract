@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image to Text Converter - Extract Text from Images Instantly</title>
+    <link rel="stylesheet" href="landing-style.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Transform Images to Text Instantly</h1>
+                <p class="subtitle">Powerful OCR technology with AI enhancement. Extract, clean, and summarize text from any image - all in your browser.</p>
+                <div class="hero-buttons">
+                    <a href="#demo" class="btn btn-primary">Try It Now</a>
+                    <a href="#features" class="btn btn-secondary">Learn More</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="demo-placeholder">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmOGZmIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk9DUiBURVNUSU5HIERFTU88L3RleHQ+Cjwvc3ZnPg==" alt="OCR Demo Preview">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="demo-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Try Our OCR Tool Now</h2>
+                <p>Experience the power of image-to-text conversion instantly</p>
+            </div>
+            
+            <div class="tool-container">
+                <!-- Image Input Section -->
+                <section class="input-section">
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-content">
+                            <svg class="upload-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <p class="upload-text">Click to select image or paste from clipboard</p>
+                            <p class="upload-hint">Supports: JPG, PNG, BMP, GIF</p>
+                        </div>
+                        <input type="file" id="fileInput" accept="image/*" hidden>
+                    </div>
+
+                    <!-- Image Preview -->
+                    <div class="preview-container" id="previewContainer" style="display: none;">
+                        <div class="preview-header">
+                            <span>Image Preview</span>
+                            <button class="btn-clear" id="clearBtn">Clear</button>
+                        </div>
+                        <img id="imagePreview" alt="Preview">
+                    </div>
+                </section>
+
+                <!-- Processing Status -->
+                <div class="status-section" id="statusSection" style="display: none;">
+                    <div class="status-content">
+                        <div class="loader"></div>
+                        <p id="statusText">Processing image...</p>
+                    </div>
+                </div>
+
+                <!-- Text Output Section -->
+                <section class="output-section" id="outputSection" style="display: none;">
+                    <div class="output-header">
+                        <h2>Extracted Text</h2>
+                        <div class="output-actions">
+                            <button class="btn-copy" id="copyBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                Copy
+                            </button>
+                            <button class="btn-enhance" id="enhanceBtn" title="Enhance text with AI">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z"></path>
+                                </svg>
+                                <span class="btn-text">Enhance</span>
+                            </button>
+                            <button class="btn-summarise" id="summariseBtn" title="Summarise text with AI">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                                </svg>
+                                <span class="btn-text">Summarise</span>
+                            </button>
+                            <button class="btn-undo" id="undoBtn" style="display: none;" title="Revert to original OCR text">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 7v6h6"></path>
+                                    <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+                                </svg>
+                                Undo
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="outputText" readonly placeholder="Extracted text will appear here..."></textarea>
+                    
+                    <!-- Word Count Display -->
+                    <div class="word-count" id="wordCount">
+                        <span id="charCount">0</span> characters · <span id="wordCountNum">0</span> words
+                    </div>
+                    
+                    <!-- Token Usage Display -->
+                    <div class="token-usage" id="tokenUsage" style="display: none;">
+                        <div class="token-usage-header">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 6v6l4 2"></path>
+                            </svg>
+                            <span>AI Usage</span>
+                        </div>
+                        <div class="token-usage-details">
+                            <div class="token-stat">
+                                <span class="token-label">Input</span>
+                                <span class="token-value" id="inputTokens">0</span>
+                            </div>
+                            <div class="token-stat">
+                                <span class="token-label">Output</span>
+                                <span class="token-value" id="outputTokens">0</span>
+                            </div>
+                            <div class="token-stat">
+                                <span class="token-label">Total</span>
+                                <span class="token-value" id="totalTokens">0</span>
+                            </div>
+                            <div class="token-stat cost">
+                                <span class="token-label">Cost</span>
+                                <span class="token-value" id="tokenCost">Free</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Summary Section (Collapsible) -->
+                    <div class="summary-section" id="summarySection" style="display: none;">
+                        <div class="summary-header" id="summaryHeader">
+                            <div class="summary-title">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                </svg>
+                                <span>Summary</span>
+                            </div>
+                            <div class="summary-actions">
+                                <button class="btn-copy-summary" id="copySummaryBtn" title="Copy summary">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                </button>
+                                <button class="btn-toggle-summary" id="toggleSummaryBtn" title="Toggle summary">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="summary-content" id="summaryContent">
+                            <div class="summary-text" id="summaryText"></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Powerful Features</h2>
+                <p>Everything you need for seamless image-to-text conversion</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                    </div>
+                    <h3>Advanced OCR</h3>
+                    <p>Industry-leading text recognition powered by Tesseract.js for accurate extraction from any image.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z"></path>
+                        </svg>
+                    </div>
+                    <h3>AI Enhancement</h3>
+                    <p>Clean up OCR errors and improve readability with Gemini AI-powered text enhancement.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="6" x2="21" y2="6"></line>
+                            <line x1="8" y1="12" x2="21" y2="12"></line>
+                            <line x1="8" y1="18" x2="21" y2="18"></line>
+                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                        </svg>
+                    </div>
+                    <h3>Smart Summarization</h3>
+                    <p>Generate concise summaries with TL;DR and bullet points from extracted text.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                    </div>
+                    <h3>Privacy First</h3>
+                    <p>All processing happens locally in your browser - your images never leave your device.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                    </div>
+                    <h3>Lightning Fast</h3>
+                    <p>Quick processing with real-time progress updates and optimized performance.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        </svg>
+                    </div>
+                    <h3>Universal Compatibility</h3>
+                    <p>Support for all common image formats: JPG, PNG, BMP, GIF, and WebP.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <h2>How It Works</h2>
+                <p>Simple steps to convert your images to text</p>
+            </div>
+            
+            <div class="steps-container">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Select Image</h3>
+                    <p>Upload an image, paste from clipboard, or drag and drop</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Process Text</h3>
+                    <p>Our OCR engine extracts text from your image</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Enhance Results</h3>
+                    <p>Use AI to clean up errors and generate summaries</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3>Copy & Use</h3>
+                    <p>Copy the final text to your clipboard for immediate use</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>Ready to Transform Your Images?</h2>
+            <p>Start converting images to text today - completely free and privacy-focused</p>
+            <a href="#demo" class="btn btn-primary btn-large">Get Started Now</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <h3>Image to Text Converter</h3>
+                    <p>Powered by Tesseract.js & Gemini AI</p>
+                </div>
+                <div class="footer-links">
+                    <a href="#">Documentation</a>
+                    <a href="#">GitHub</a>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Image to Text Converter. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+                <button class="btn-close" id="closeModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- AI Model Selection -->
+                <div class="form-group">
+                    <label>AI Model Selection</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="aiModel" value="gemini" id="modelGemini" checked>
+                            <div class="radio-content">
+                                <span class="radio-label">Bring Your Own Gemini Key</span>
+                                <span class="radio-description">Use your own Google Gemini API key</span>
+                            </div>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="aiModel" value="openai" id="modelOpenAI">
+                            <div class="radio-content">
+                                <span class="radio-label">Pre-built AI Model (14 requests/day)</span>
+                                <span class="radio-description">Use built-in OpenAI-compatible model with rate limiting</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Gemini API Key -->
+                <div class="form-group" id="geminiKeyGroup">
+                    <label for="apiKeyInput">Gemini API Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key" autocomplete="off">
+                    <p class="form-hint">
+                        Get your free API key from 
+                        <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>
+                    </p>
+                </div>
+
+                <!-- OpenAI-Compatible API Configuration -->
+                <div class="form-group" id="openaiConfigGroup" style="display: none;">
+                    <div style="background: #f8f9ff; border-radius: 8px; border: 1px solid #e0e5f0; padding: 20px; text-align: center;">
+                        <h3 style="margin-top: 0; color: #333;">Pre-built AI Model</h3>
+                        <p style="color: #666; margin-bottom: 20px;">
+                            This model is configured via backend environment variables.<br>
+                            Rate limiting: 14 requests per 24 hours.
+                        </p>
+                        
+                        <!-- Rate Limit Display -->
+                        <div class="rate-limit-info" id="rateLimitInfo" style="padding: 12px; background: white; border-radius: 8px; border: 1px solid #e0e5f0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>Requests Remaining:</span>
+                                <span id="requestsRemaining">14/14</span>
+                            </div>
+                            <div style="font-size: 0.85rem; color: #666; margin-top: 4px;">
+                                Resets in <span id="resetTime">24 hours</span>
+                            </div>
+                            <div style="font-size: 0.75rem; color: #888; margin-top: 4px;">
+                                Pricing: $0.10/1M input tokens, $0.20/1M output tokens
+                            </div>
+                        </div>
+                        
+                        <div class="form-hint" style="margin-top: 15px; text-align: left;">
+                            <strong>Configuration:</strong> Set these environment variables on your server:<br>
+                            <code>OPENAI_COMPATIBLE_API_KEY</code> - Your API key<br>
+                            <code>OPENAI_COMPATIBLE_BASE_URL</code> - API endpoint (optional)<br>
+                            <code>OPENAI_COMPATIBLE_MODEL</code> - Model name (optional)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-status" id="apiStatus">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusMessage">No API key configured</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelModalBtn">Cancel</button>
+                <button class="btn-primary" id="saveApiKeyBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Load Tesseract.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script>
+        // Check if Tesseract is loaded
+        if (typeof Tesseract === 'undefined') {
+            console.error('Tesseract.js failed to load');
+        } else {
+            console.log('Tesseract.js loaded successfully');
+        }
+    </script>
+    <script src="config.js"></script>
+    <script src="ai-service.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

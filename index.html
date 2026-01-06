@@ -191,7 +191,7 @@
                         <label class="radio-option">
                             <input type="radio" name="aiModel" value="openai" id="modelOpenAI">
                             <div class="radio-content">
-                                <span class="radio-label">Pre-built AI Model (3 requests/day)</span>
+                                <span class="radio-label">Pre-built AI Model (14 requests/day)</span>
                                 <span class="radio-description">Use built-in OpenAI-compatible model with rate limiting</span>
                             </div>
                         </label>
@@ -214,17 +214,20 @@
                         <h3 style="margin-top: 0; color: #333;">Pre-built AI Model</h3>
                         <p style="color: #666; margin-bottom: 20px;">
                             This model is configured via backend environment variables.<br>
-                            Rate limiting: 3 requests per 24 hours.
+                            Rate limiting: 14 requests per 24 hours.
                         </p>
                         
                         <!-- Rate Limit Display -->
                         <div class="rate-limit-info" id="rateLimitInfo" style="padding: 12px; background: white; border-radius: 8px; border: 1px solid #e0e5f0;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span>Requests Remaining:</span>
-                                <span id="requestsRemaining">3/3</span>
+                                <span id="requestsRemaining">14/14</span>
                             </div>
                             <div style="font-size: 0.85rem; color: #666; margin-top: 4px;">
                                 Resets in <span id="resetTime">24 hours</span>
+                            </div>
+                            <div style="font-size: 0.75rem; color: #888; margin-top: 4px;">
+                                Pricing: $0.10/1M input tokens, $0.20/1M output tokens
                             </div>
                         </div>
                         
