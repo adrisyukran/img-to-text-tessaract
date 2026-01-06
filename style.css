@@ -973,6 +973,61 @@ footer a:hover {
     font-size: 0.95rem;
 }
 
+/* Radio Group Styling */
+.radio-group {
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.radio-option {
+    display: block;
+    padding: 16px;
+    border-bottom: 1px solid #e0e0e0;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.radio-option:last-child {
+    border-bottom: none;
+}
+
+.radio-option:hover {
+    background-color: #f8f9ff;
+}
+
+.radio-option input[type="radio"] {
+    display: none;
+}
+
+.radio-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.radio-label {
+    font-weight: 600;
+    color: #333;
+}
+
+.radio-description {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.radio-option input[type="radio"]:checked + .radio-content {
+    color: var(--primary-color);
+}
+
+.radio-option input[type="radio"]:checked + .radio-content .radio-label {
+    color: var(--primary-color);
+}
+
+.radio-option input[type="radio"]:checked {
+    background-color: var(--primary-color);
+}
+
 .form-group input {
     width: 100%;
     padding: 12px 16px;
