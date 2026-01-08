@@ -341,6 +341,7 @@ main {
     font-size: 1rem;
     font-weight: 600;
     transition: all 0.3s ease;
+    position: relative;
 }
 
 .btn-enhance:hover:not(:disabled) {
@@ -361,15 +362,8 @@ main {
     pointer-events: none;
 }
 
-.btn-enhance.loading .btn-text::after {
-    content: '...';
-    animation: ellipsis 1.5s infinite;
-}
-
-@keyframes ellipsis {
-    0% { content: '.'; }
-    33% { content: '..'; }
-    66% { content: '...'; }
+.btn-enhance.loading .btn-text {
+    opacity: 0;
 }
 
 .btn-enhance svg {
@@ -377,13 +371,29 @@ main {
     height: 20px;
 }
 
-.btn-enhance.loading svg {
-    animation: sparkle 1s ease-in-out infinite;
+/* Loading Spinner */
+.btn-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    opacity: 0;
 }
 
-@keyframes sparkle {
-    0%, 100% { transform: scale(1) rotate(0deg); }
-    50% { transform: scale(1.2) rotate(180deg); }
+.btn-enhance.loading .btn-spinner,
+.btn-summarise.loading .btn-spinner {
+    opacity: 1;
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
 /* Undo Button */

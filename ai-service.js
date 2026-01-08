@@ -319,8 +319,14 @@ function setOpenAIConfig(apiKey, baseUrl = null, model = null) {
  * @returns {boolean} True if API key exists
  */
 function isOpenAIConfigured() {
+    // Check localStorage first (user-provided key)
     const config = getOpenAIConfig();
-    return config.apiKey !== null && config.apiKey.trim().length > 0;
+    const hasLocalKey = config.apiKey !== null && config.apiKey.trim().length > 0;
+    
+    // Also check window.OPENAI_COMPATIBLE_API_KEY (from server/env injection)
+    const hasEnvKey = window.OPENAI_COMPATIBLE_API_KEY && window.OPENAI_COMPATIBLE_API_KEY.trim().length > 0;
+    
+    return hasLocalKey || hasEnvKey;
 }
 
 /**

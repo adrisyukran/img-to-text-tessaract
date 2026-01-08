@@ -216,7 +216,7 @@
 <div class="output-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
 <h2 class="text-xl font-bold text-gray-900 dark:text-white">Extracted Text</h2>
 <div class="output-actions flex flex-wrap gap-2">
-<button class="btn-copy inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark transition-colors">
+<button class="btn-copy inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark transition-colors" id="copyBtn">
 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
 </svg>
@@ -227,6 +227,7 @@ Copy
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
 </svg>
 <span class="btn-text">Enhance</span>
+<div class="btn-spinner" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: none;"></div>
 </button>
 <button class="btn-summarise inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity" id="summariseBtn" title="Summarise text with AI">
 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -245,7 +246,7 @@ Undo
 <textarea id="outputText" readonly placeholder="Extracted text will appear here..." class="w-full min-h-[200px] rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-[#111217] p-4 text-gray-900 dark:text-white focus:border-primary focus:ring-primary focus:ring-1"></textarea>
 
 <!-- Word Count Display -->
-<div class="word-count mt-3 text-right text-sm text-gray-500 dark:text-gray-400">
+<div class="word-count mt-3 text-right text-sm text-gray-500 dark:text-gray-400" id="wordCountEl" style="display: block;">
 <span id="charCount">0</span> characters · <span id="wordCountNum">0</span> words
 </div>
 
@@ -547,85 +548,84 @@ Undo
 </div>
 </footer>
 <!-- Settings Modal -->
-<div class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-60 p-4" id="settingsModal">
-<div class="modal relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-card-dark shadow-xl">
-<div class="modal-header flex items-center justify-between border-b border-gray-200 dark:border-border-dark p-6">
-<h2 class="text-xl font-bold text-gray-900 dark:text-white">⚙️ Settings</h2>
-<button class="btn-close rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-[#252833]" id="closeModalBtn">×</button>
+<div class="modal-overlay" id="settingsModal">
+<div class="modal">
+<div class="modal-header">
+<h2>⚙️ Settings</h2>
+<button class="btn-close" id="closeModalBtn">&times;</button>
 </div>
-<div class="modal-body p-6">
+<div class="modal-body">
 <!-- AI Model Selection -->
-<div class="form-group mb-6">
-<label class="mb-3 block text-sm font-medium text-gray-900 dark:text-white">AI Model Selection</label>
-<div class="rounded-lg border border-gray-200 dark:border-border-dark">
-<label class="radio-option flex cursor-pointer items-start border-b border-gray-200 p-4 last:border-b-0 dark:border-border-dark dark:hover:bg-[#252833]">
-<input type="radio" name="aiModel" value="gemini" id="modelGemini" class="mt-1 h-4 w-4 text-primary focus:ring-primary" checked>
-<div class="radio-content ml-3">
-<span class="radio-label block font-medium text-gray-900 dark:text-white">Bring Your Own Gemini Key</span>
-<span class="radio-description block text-sm text-gray-500 dark:text-gray-400">Use your own Google Gemini API key</span>
+<div class="form-group">
+<label>AI Model Selection</label>
+<div class="radio-group">
+<label class="radio-option">
+<input type="radio" name="aiModel" value="gemini" id="modelGemini" checked>
+<div class="radio-content">
+<span class="radio-label">Bring Your Own Gemini Key</span>
+<span class="radio-description">Use your own Google Gemini API key</span>
 </div>
 </label>
-<label class="radio-option flex cursor-pointer items-start p-4 dark:hover:bg-[#252833]">
-<input type="radio" name="aiModel" value="openai" id="modelOpenAI" class="mt-1 h-4 w-4 text-primary focus:ring-primary">
-<div class="radio-content ml-3">
-<span class="radio-label block font-medium text-gray-900 dark:text-white">Pre-built AI Model (14 requests/day)</span>
-<span class="radio-description block text-sm text-gray-500 dark:text-gray-400">Use built-in OpenAI-compatible model with rate limiting</span>
+<label class="radio-option">
+<input type="radio" name="aiModel" value="openai" id="modelOpenAI">
+<div class="radio-content">
+<span class="radio-label">Pre-built AI Model (14 requests/day)</span>
+<span class="radio-description">Use built-in OpenAI-compatible model with rate limiting</span>
 </div>
 </label>
 </div>
 </div>
 
 <!-- Gemini API Key -->
-<div class="form-group mb-6" id="geminiKeyGroup">
-<label for="apiKeyInput" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Gemini API Key</label>
-<input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key" autocomplete="off" class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:border-primary focus:ring-primary dark:border-border-dark dark:bg-[#111217] dark:text-white dark:placeholder-gray-400">
-<p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+<div class="form-group" id="geminiKeyGroup">
+<label for="apiKeyInput">Gemini API Key</label>
+<input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key" autocomplete="off">
+<p class="form-hint">
                         Get your free API key from 
-                        <a href="https://aistudio.google.com/apikey" target="_blank" class="font-medium text-primary hover:underline">Google AI Studio</a>
+                        <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>
                     </p>
 </div>
 
 <!-- OpenAI-Compatible API Configuration -->
-<div class="form-group mb-6" id="openaiConfigGroup" style="display: none;">
-<div class="rounded-lg bg-blue-50 p-5 dark:bg-blue-900/20">
-<h3 class="mb-3 text-lg font-bold text-gray-900 dark:text-white">Pre-built AI Model</h3>
-<p class="mb-4 text-sm text-gray-600 dark:text-gray-300">
+<div class="form-group" id="openaiConfigGroup" style="display: none;">
+<div style="background: #f8f9ff; border-radius: 8px; border: 1px solid #e0e5f0; padding: 20px; text-align: center;">
+<h3 style="margin-top: 0; color: #333;">Pre-built AI Model</h3>
+<p style="color: #666; margin-bottom: 20px;">
                             This model is configured via backend environment variables.<br>
                             Rate limiting: 14 requests per 24 hours.
                         </p>
 
 <!-- Rate Limit Display -->
-<div class="rate-limit-info rounded-lg border border-blue-200 bg-white p-4 dark:border-blue-800 dark:bg-[#111217]" id="rateLimitInfo">
-<div class="flex justify-between">
-<span class="text-sm font-medium text-gray-700 dark:text-gray-300">Requests Remaining:</span>
-<span id="requestsRemaining" class="font-medium text-gray-900 dark:text-white">14/14</span>
+<div class="rate-limit-info" id="rateLimitInfo" style="padding: 12px; background: white; border-radius: 8px; border: 1px solid #e0e5f0;">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<span>Requests Remaining:</span>
+<span id="requestsRemaining">14/14</span>
 </div>
-<div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+<div style="font-size: 0.85rem; color: #666; margin-top: 4px;">
                                 Resets in <span id="resetTime">24 hours</span>
                             </div>
-<div class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+<div style="font-size: 0.75rem; color: #888; margin-top: 4px;">
                                 Pricing: $0.10/1M input tokens, $0.20/1M output tokens
                             </div>
 </div>
 
-<div class="mt-4 text-sm text-gray-600 dark:text-gray-300">
+<div class="form-hint" style="margin-top: 15px; text-align: left;">
 <strong>Configuration:</strong> Set these environment variables on your server:<br>
-<code class="break-all text-xs">OPENAI_COMPATIBLE_API_KEY</code> - Your API key<br>
-<code class="break-all text-xs">OPENAI_COMPATIBLE_BASE_URL</code> - API endpoint (optional)<br>
-<code class="break-all text-xs">OPENAI_COMPATIBLE_MODEL</code> - Model name (optional)
+<code>OPENAI_COMPATIBLE_API_KEY</code> - Your API key<br>
+<code>OPENAI_COMPATIBLE_BASE_URL</code> - API endpoint (optional)<br>
+<code>OPENAI_COMPATIBLE_MODEL</code> - Model name (optional)
 </div>
 </div>
 </div>
 
-<div class="api-status flex items-center gap-2 rounded-lg bg-gray-100 p-3 dark:bg-[#252833]" id="apiStatus">
-<span class="status-dot h-3 w-3 rounded-full bg-gray-400" id="statusDot"></span>
-<span id="statusMessage" class="text-sm text-gray-600 dark:text-gray-300">No API key configured</span>
+<div class="api-status" id="apiStatus">
+<span class="status-dot" id="statusDot"></span>
+<span id="statusMessage">No API key configured</span>
 </div>
 </div>
-<div class="modal-footer flex justify-end gap-3 border-t border-gray-200 p-6 dark:border-border-dark">
-<button class="btn-secondary rounded-lg px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 dark:bg-[#252833] dark:text-white dark:hover:bg-[#2d303d]" id="cancelModalBtn">Cancel</button>
-<button class="btn-primary rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-dark" id="saveApiKeyBtn">Save</button>
-</div>
+<div class="modal-footer">
+<button class="btn-secondary" id="cancelModalBtn">Cancel</button>
+<button class="btn-primary" id="saveApiKeyBtn">Save</button>
 </div>
 </div>
 </div>
@@ -648,6 +648,447 @@ Undo
 <script src="script.js"></script>
 
 <style>
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9) translateY(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .modal-header h2 {
+            font-size: 1.4rem;
+            color: #333;
+            margin: 0;
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #666;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-close:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        /* Radio Group Styling */
+        .radio-group {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .radio-option {
+            display: block;
+            padding: 16px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .radio-option:last-child {
+            border-bottom: none;
+        }
+
+        .radio-option:hover {
+            background-color: #f8f9ff;
+        }
+
+        .radio-option input[type="radio"] {
+            display: none;
+        }
+
+        .radio-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .radio-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .radio-description {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .radio-option input[type="radio"]:checked + .radio-content {
+            color: var(--primary-color);
+        }
+
+        .radio-option input[type="radio"]:checked + .radio-content .radio-label {
+            color: var(--primary-color);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            background: #fff;
+            color: #333;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: #999;
+        }
+
+        /* Dark mode input styles */
+        @media (prefers-color-scheme: dark) {
+            .form-group input {
+                background: #1c1e26;
+                color: #fff;
+                border-color: #292c38;
+            }
+            
+            .form-group input::placeholder {
+                color: #888;
+            }
+        }
+        
+        /* Force dark mode input for modal */
+        .modal-overlay.active .modal .form-group input {
+            background: #1c1e26;
+            color: #fff;
+            border-color: #292c38;
+        }
+        
+        .modal-overlay.active .modal .form-group input::placeholder {
+            color: #888;
+        }
+
+        .form-hint {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .form-hint a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .form-hint a:hover {
+            text-decoration: underline;
+        }
+
+        /* API Status Indicator */
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ccc;
+            flex-shrink: 0;
+        }
+
+        .status-dot.configured {
+            background: #28a745;
+            box-shadow: 0 0 8px rgba(40, 167, 69, 0.5);
+        }
+
+        .status-dot.error {
+            background: #ff4757;
+            box-shadow: 0 0 8px rgba(255, 71, 87, 0.5);
+        }
+
+        .status-dot.testing {
+            background: #ffc107;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        #statusMessage {
+            color: #555;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 24px;
+            border-top: 1px solid #e0e0e0;
+            background: #f9f9f9;
+            border-radius: 0 0 16px 16px;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            transform: translateX(120%);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            pointer-events: auto;
+            max-width: 350px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast.hiding {
+            transform: translateX(120%);
+            opacity: 0;
+        }
+
+        .toast-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .toast-message {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .toast.success {
+            border-left: 4px solid #28a745;
+        }
+
+        .toast.success .toast-icon {
+            color: #28a745;
+        }
+
+        .toast.error {
+            border-left: 4px solid #ff4757;
+        }
+
+        .toast.error .toast-icon {
+            color: #ff4757;
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .toast.info .toast-icon {
+            color: var(--primary-color);
+        }
+
+        /* Loader Animation */
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #e0e0e0;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Upload Area */
+        .upload-area.dragover {
+            border-color: var(--primary-dark);
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        /* Output Section Enhanced */
+        .output-section.enhanced .output-header h2::after {
+            content: ' ✨';
+        }
+
+        /* Summary Section */
+        .summary-section.collapsed .summary-content {
+            display: none;
+        }
+
+        .summary-section.loading .summary-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px;
+        }
+
+        .summary-section.loading .summary-text {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* Responsive Modal */
+        @media (max-width: 480px) {
+            .modal {
+                max-width: 100%;
+            }
+
+            .modal-header {
+                padding: 16px 20px;
+            }
+
+            .modal-body {
+                padding: 20px;
+            }
+
+            .modal-footer {
+                padding: 16px 20px;
+                flex-direction: column;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                width: 100%;
+            }
+        }
+
         @keyframes scan {
             0% { top: 0%; opacity: 0; }
             10% { opacity: 1; }

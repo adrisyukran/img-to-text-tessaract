@@ -29,7 +29,7 @@ const totalTokensEl = document.getElementById('totalTokens');
 const tokenCostEl = document.getElementById('tokenCost');
 
 // Word Count Elements
-const wordCountEl = document.getElementById('wordCount');
+const wordCountEl = document.getElementById('wordCountEl');
 const charCountEl = document.getElementById('charCount');
 const wordCountNumEl = document.getElementById('wordCountNum');
 
@@ -48,7 +48,7 @@ const modelOpenAI = document.getElementById('modelOpenAI');
 const geminiKeyGroup = document.getElementById('geminiKeyGroup');
 const openaiConfigGroup = document.getElementById('openaiConfigGroup');
 const requestsRemaining = document.getElementById('requestsRemaining');
-const resetTime = document.getElementById('resetTime');
+const resetTimeEl = document.getElementById('resetTime');
 const statusDot = document.getElementById('statusDot');
 const statusMessage = document.getElementById('statusMessage');
 
@@ -70,8 +70,45 @@ let totalUsage = {
     totalCost: 0
 };
 
+// Initialize spinners for buttons
+function initButtonSpinners() {
+    if (enhanceBtn) {
+        // Remove existing spinner if any
+        const existingSpinner = enhanceBtn.querySelector('.btn-spinner');
+        if (existingSpinner) existingSpinner.remove();
+        
+        // Create new spinner
+        const spinner = document.createElement('div');
+        spinner.className = 'btn-spinner';
+        spinner.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: none;';
+        enhanceBtn.appendChild(spinner);
+    }
+    if (summariseBtn) {
+        // Remove existing spinner if any
+        const existingSpinner = summariseBtn.querySelector('.btn-spinner');
+        if (existingSpinner) existingSpinner.remove();
+        
+        // Create new spinner
+        const spinner = document.createElement('div');
+        spinner.className = 'btn-spinner';
+        spinner.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: none;';
+        summariseBtn.appendChild(spinner);
+    }
+}
+
 // Initialize event listeners
 function init() {
+    console.log('Initializing app...');
+    
+    // Initialize button spinners
+    initButtonSpinners();
+    
+    // Check if all required elements exist
+    if (!uploadArea || !fileInput || !settingsBtn || !settingsModal) {
+        console.error('Required DOM elements not found');
+        return;
+    }
+
     // Click to select file
     uploadArea.addEventListener('click', () => fileInput.click());
     
@@ -87,69 +124,95 @@ function init() {
     uploadArea.addEventListener('drop', handleDrop);
     
     // Clear button
-    clearBtn.addEventListener('click', resetApp);
+    if (clearBtn) {
+        clearBtn.addEventListener('click', resetApp);
+    }
     
     // Copy button
-    copyBtn.addEventListener('click', copyToClipboard);
+    if (copyBtn) {
+        copyBtn.addEventListener('click', copyToClipboard);
+    }
 
     // AI buttons
-    enhanceBtn.addEventListener('click', enhanceText);
-    undoBtn.addEventListener('click', undoEnhance);
-    summariseBtn.addEventListener('click', summariseText);
+    if (enhanceBtn) {
+        enhanceBtn.addEventListener('click', enhanceText);
+    }
+    if (undoBtn) {
+        undoBtn.addEventListener('click', undoEnhance);
+    }
+    if (summariseBtn) {
+        summariseBtn.addEventListener('click', summariseText);
+    }
     
     // Summary section
-    toggleSummaryBtn.addEventListener('click', toggleSummary);
-    summaryHeader.addEventListener('click', (e) => {
-        if (e.target !== copySummaryBtn && !copySummaryBtn.contains(e.target)) {
-            toggleSummary();
-        }
-    });
-    copySummaryBtn.addEventListener('click', copySummary);
+    if (toggleSummaryBtn) {
+        toggleSummaryBtn.addEventListener('click', toggleSummary);
+    }
+    if (summaryHeader && copySummaryBtn) {
+        summaryHeader.addEventListener('click', (e) => {
+            if (e.target !== copySummaryBtn && !copySummaryBtn.contains(e.target)) {
+                toggleSummary();
+            }
+        });
+    }
+    if (copySummaryBtn) {
+        copySummaryBtn.addEventListener('click', copySummary);
+    }
 
     // Settings modal
-    settingsBtn.addEventListener('click', openSettingsModal);
-    closeModalBtn.addEventListener('click', closeSettingsModal);
-    cancelModalBtn.addEventListener('click', closeSettingsModal);
-    saveApiKeyBtn.addEventListener('click', saveApiKey);
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', openSettingsModal);
+    }
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', closeSettingsModal);
+    }
+    if (cancelModalBtn) {
+        cancelModalBtn.addEventListener('click', closeSettingsModal);
+    }
+    if (saveApiKeyBtn) {
+        saveApiKeyBtn.addEventListener('click', saveApiKey);
+    }
     
     // Model selection
-    modelGemini.addEventListener('change', handleModelChange);
-    modelOpenAI.addEventListener('change', handleModelChange);
+    if (modelGemini) {
+        modelGemini.addEventListener('change', handleModelChange);
+    }
+    if (modelOpenAI) {
+        modelOpenAI.addEventListener('change', handleModelChange);
+    }
     
     // Close modal on overlay click
-    settingsModal.addEventListener('click', (e) => {
-        if (e.target === settingsModal) {
-            closeSettingsModal();
-        }
-    });
+    if (settingsModal) {
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                closeSettingsModal();
+            }
+        });
+    }
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         // Escape to close modal
-        if (e.key === 'Escape' && settingsModal.classList.contains('active')) {
+        if (e.key === 'Escape' && settingsModal && settingsModal.classList.contains('active')) {
             closeSettingsModal();
             return;
         }
         
         // Only handle shortcuts when output is visible and modal is not open
-        if (outputSection.style.display === 'none' || settingsModal.classList.contains('active')) {
+        if (!outputSection || outputSection.style.display === 'none' || (settingsModal && settingsModal.classList.contains('active'))) {
             return;
         }
         
         // Ctrl+E for Enhance
-        if (e.ctrlKey && e.key === 'e') {
+        if (e.ctrlKey && e.key === 'e' && enhanceBtn && !enhanceBtn.disabled) {
             e.preventDefault();
-            if (!enhanceBtn.disabled) {
-                enhanceText();
-            }
+            enhanceText();
         }
         
         // Ctrl+Shift+S for Summarise
-        if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+        if (e.ctrlKey && e.shiftKey && e.key === 'S' && summariseBtn && !summariseBtn.disabled) {
             e.preventDefault();
-            if (!summariseBtn.disabled) {
-                summariseText();
-            }
+            summariseText();
         }
         
         // Ctrl+Shift+C for Copy
@@ -163,9 +226,17 @@ function init() {
     updateApiKeyStatus();
     
     // Update button titles with keyboard shortcuts
-    enhanceBtn.title = 'Enhance text with AI (Ctrl+E)';
-    summariseBtn.title = 'Summarise text with AI (Ctrl+Shift+S)';
-    copyBtn.title = 'Copy to clipboard (Ctrl+Shift+C)';
+    if (enhanceBtn) {
+        enhanceBtn.title = 'Enhance text with AI (Ctrl+E)';
+    }
+    if (summariseBtn) {
+        summariseBtn.title = 'Summarise text with AI (Ctrl+Shift+S)';
+    }
+    if (copyBtn) {
+        copyBtn.title = 'Copy to clipboard (Ctrl+Shift+C)';
+    }
+    
+    console.log('App initialized successfully');
 }
 
 // Handle file selection from input
@@ -195,19 +266,25 @@ function handlePaste(event) {
 // Handle drag over
 function handleDragOver(event) {
     event.preventDefault();
-    uploadArea.classList.add('dragover');
+    if (uploadArea) {
+        uploadArea.classList.add('dragover');
+    }
 }
 
 // Handle drag leave
 function handleDragLeave(event) {
     event.preventDefault();
-    uploadArea.classList.remove('dragover');
+    if (uploadArea) {
+        uploadArea.classList.remove('dragover');
+    }
 }
 
 // Handle drop
 function handleDrop(event) {
     event.preventDefault();
-    uploadArea.classList.remove('dragover');
+    if (uploadArea) {
+        uploadArea.classList.remove('dragover');
+    }
     
     const file = event.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
@@ -224,9 +301,15 @@ function processImage(file) {
     // Show preview
     const reader = new FileReader();
     reader.onload = (e) => {
-        imagePreview.src = e.target.result;
-        previewContainer.style.display = 'block';
-        uploadArea.style.display = 'none';
+        if (imagePreview) {
+            imagePreview.src = e.target.result;
+        }
+        if (previewContainer) {
+            previewContainer.style.display = 'block';
+        }
+        if (uploadArea) {
+            uploadArea.style.display = 'none';
+        }
         
         // Start OCR
         performOCR(e.target.result);
@@ -237,26 +320,40 @@ function processImage(file) {
 // Perform OCR using Tesseract.js
 async function performOCR(imageData) {
     // Show status
-    statusSection.style.display = 'block';
-    outputSection.style.display = 'none';
-    statusText.textContent = 'Initializing OCR...';
+    if (statusSection) {
+        statusSection.style.display = 'block';
+    }
+    if (outputSection) {
+        outputSection.style.display = 'none';
+    }
+    if (statusText) {
+        statusText.textContent = 'Initializing OCR...';
+    }
     
     try {
         console.log('Starting OCR process...');
+        
+        // Check if Tesseract is loaded
+        if (typeof Tesseract === 'undefined') {
+            throw new Error('Tesseract.js is not loaded');
+        }
+        
         // Create Tesseract worker
         const worker = await Tesseract.createWorker('eng', 1, {
             logger: (m) => {
                 console.log('Tesseract log:', m);
                 // Update status based on progress
-                if (m.status === 'loading tesseract core') {
-                    statusText.textContent = 'Loading OCR engine...';
-                } else if (m.status === 'initializing tesseract') {
-                    statusText.textContent = 'Initializing...';
-                } else if (m.status === 'loading language traineddata') {
-                    statusText.textContent = 'Loading language data...';
-                } else if (m.status === 'recognizing text') {
-                    const progress = Math.round(m.progress * 100);
-                    statusText.textContent = `Processing image... ${progress}%`;
+                if (statusText) {
+                    if (m.status === 'loading tesseract core') {
+                        statusText.textContent = 'Loading OCR engine...';
+                    } else if (m.status === 'initializing tesseract') {
+                        statusText.textContent = 'Initializing...';
+                    } else if (m.status === 'loading language traineddata') {
+                        statusText.textContent = 'Loading language data...';
+                    } else if (m.status === 'recognizing text') {
+                        const progress = Math.round(m.progress * 100);
+                        statusText.textContent = `Processing image... ${progress}%`;
+                    }
                 }
             }
         });
@@ -274,37 +371,53 @@ async function performOCR(imageData) {
         
     } catch (error) {
         console.error('OCR Error:', error);
-        showError('Failed to process image. Please try again.');
+        showError('Failed to process image. Please try again. Error: ' + error.message);
     }
 }
 
 // Display OCR results
 function displayResults(text) {
-    statusSection.style.display = 'none';
-    outputSection.style.display = 'block';
+    if (statusSection) {
+        statusSection.style.display = 'none';
+    }
+    if (outputSection) {
+        outputSection.style.display = 'block';
+    }
     
-    // Reset AI-related state
+    // Reset AI-related state FIRST
     isTextEnhanced = false;
-    outputSection.classList.remove('enhanced');
-    undoBtn.style.display = 'none';
-    tokenUsage.style.display = 'none';
-    
-    // Reset summary state
     hasSummary = false;
     currentSummary = null;
-    summarySection.style.display = 'none';
-    summaryText.innerHTML = '';
+    originalOcrText = null;
+    
+    if (outputSection) {
+        outputSection.classList.remove('enhanced');
+    }
+    if (undoBtn) {
+        undoBtn.style.display = 'none';
+    }
+    if (tokenUsage) {
+        tokenUsage.style.display = 'none';
+    }
+    if (summarySection) {
+        summarySection.style.display = 'none';
+    }
+    if (summaryText) {
+        summaryText.innerHTML = '';
+    }
     
     // Reset cumulative usage
     totalUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0, totalCost: 0 };
     
     // Set text values FIRST
-    if (text.trim()) {
-        outputText.value = text;
-        originalOcrText = text;
-    } else {
-        outputText.value = 'No text detected in the image.';
-        originalOcrText = null;
+    if (outputText) {
+        if (text && text.trim()) {
+            outputText.value = text;
+            originalOcrText = text;
+        } else {
+            outputText.value = 'No text detected in the image.';
+            originalOcrText = null;
+        }
     }
     
     // Update word count
@@ -317,6 +430,7 @@ function displayResults(text) {
 
 // Copy text to clipboard
 async function copyToClipboard() {
+    if (!outputText) return;
     const text = outputText.value;
     
     if (!text) {
@@ -327,17 +441,19 @@ async function copyToClipboard() {
         await navigator.clipboard.writeText(text);
         
         // Show feedback
-        const originalText = copyBtn.innerHTML;
-        copyBtn.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            Copied!
-        `;
-        
-        setTimeout(() => {
-            copyBtn.innerHTML = originalText;
-        }, 2000);
+        if (copyBtn) {
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Copied!
+            `;
+            
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+            }, 2000);
+        }
         
     } catch (error) {
         console.error('Copy Error:', error);
@@ -345,43 +461,120 @@ async function copyToClipboard() {
     }
 }
 
-// Reset the application
+// Reset the application (FULL RESET - clears all states)
 function resetApp() {
     currentImage = null;
-    fileInput.value = '';
-    imagePreview.src = '';
-    previewContainer.style.display = 'none';
-    statusSection.style.display = 'none';
-    outputSection.style.display = 'none';
-    uploadArea.style.display = 'block';
-    outputText.value = '';
+    if (fileInput) {
+        fileInput.value = '';
+    }
+    if (imagePreview) {
+        imagePreview.src = '';
+    }
+    if (previewContainer) {
+        previewContainer.style.display = 'none';
+    }
+    if (statusSection) {
+        statusSection.style.display = 'none';
+    }
+    if (outputSection) {
+        outputSection.style.display = 'none';
+    }
+    if (uploadArea) {
+        uploadArea.style.display = 'block';
+    }
+    if (outputText) {
+        outputText.value = '';
+    }
     
-    // Reset AI state
+    // COMPLETE RESET of all AI states
     originalOcrText = null;
     isTextEnhanced = false;
     isEnhancing = false;
     isSummarising = false;
     hasSummary = false;
     currentSummary = null;
-    outputSection.classList.remove('enhanced');
-    undoBtn.style.display = 'none';
-    tokenUsage.style.display = 'none';
-    summarySection.style.display = 'none';
-    summaryText.innerHTML = '';
+    
+    if (outputSection) {
+        outputSection.classList.remove('enhanced');
+    }
+    if (undoBtn) {
+        undoBtn.style.display = 'none';
+    }
+    if (tokenUsage) {
+        tokenUsage.style.display = 'none';
+    }
+    if (summarySection) {
+        summarySection.style.display = 'none';
+    }
+    if (summaryText) {
+        summaryText.innerHTML = '';
+    }
     
     // Reset cumulative usage
     totalUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0, totalCost: 0 };
+    
+    // Reset button texts and states
+    resetButtonStates();
+    
+    console.log('App fully reset - all states cleared');
+}
+
+// Reset button texts and spinner states
+function resetButtonStates() {
+    // Reset enhance button
+    if (enhanceBtn) {
+        enhanceBtn.classList.remove('loading');
+        enhanceBtn.disabled = false;
+        const btnText = enhanceBtn.querySelector('.btn-text');
+        if (btnText) {
+            btnText.textContent = 'Enhance';
+        }
+        const spinner = enhanceBtn.querySelector('.btn-spinner');
+        if (spinner) {
+            spinner.style.display = 'none';
+        }
+    }
+    
+    // Reset summarise button
+    if (summariseBtn) {
+        summariseBtn.classList.remove('loading');
+        summariseBtn.disabled = false;
+        const btnText = summariseBtn.querySelector('.btn-text');
+        if (btnText) {
+            btnText.textContent = 'Summarise';
+        }
+        const spinner = summariseBtn.querySelector('.btn-spinner');
+        if (spinner) {
+            spinner.style.display = 'none';
+        }
+    }
+    
+    // Reset word count
+    if (charCountEl) {
+        charCountEl.textContent = '0';
+    }
+    if (wordCountNumEl) {
+        wordCountNumEl.textContent = '0';
+    }
 }
 
 // Show error message
 function showError(message) {
-    statusSection.style.display = 'block';
-    statusText.textContent = message;
-    statusText.style.color = '#ff4757';
+    if (statusSection) {
+        statusSection.style.display = 'block';
+    }
+    if (statusText) {
+        statusText.textContent = message;
+        statusText.style.color = '#ff4757';
+    }
     
     setTimeout(() => {
-        statusSection.style.display = 'none';
-        statusText.style.color = '#667eea';
+        if (statusSection) {
+            statusSection.style.display = 'none';
+        }
+        if (statusText) {
+            statusText.style.color = '#667fea';
+        }
     }, 3000);
     
     // Also show as toast for better visibility
@@ -390,6 +583,8 @@ function showError(message) {
 
 // Toast Notification System
 function showToast(title, message, type = 'info', duration = 4000) {
+    if (!toastContainer) return;
+    
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     
@@ -425,6 +620,8 @@ function showToast(title, message, type = 'info', duration = 4000) {
 
 // Word Count Functions
 function updateWordCount() {
+    if (!outputText || !charCountEl || !wordCountNumEl) return;
+    
     const text = outputText.value || '';
     const charCount = text.length;
     const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
@@ -435,119 +632,137 @@ function updateWordCount() {
 
 // Settings Modal Functions
 function openSettingsModal() {
+    if (!settingsModal) return;
+    
     // Load current settings
-    const currentGeminiKey = window.AIService.getApiKey();
+    const currentGeminiKey = window.AIService ? window.AIService.getApiKey() : '';
     
     // Set Gemini key
-    apiKeyInput.value = currentGeminiKey || '';
+    if (apiKeyInput) {
+        apiKeyInput.value = currentGeminiKey || '';
+    }
     
     // Load selected model (default to Gemini)
     const selectedModel = localStorage.getItem('selected_ai_model') || 'gemini';
-    if (selectedModel === 'openai') {
+    if (modelOpenAI && selectedModel === 'openai') {
         modelOpenAI.checked = true;
-        geminiKeyGroup.style.display = 'none';
-        openaiConfigGroup.style.display = 'block';
-    } else {
+        if (geminiKeyGroup) {
+            geminiKeyGroup.style.display = 'none';
+        }
+        if (openaiConfigGroup) {
+            openaiConfigGroup.style.display = 'block';
+        }
+    } else if (modelGemini) {
         modelGemini.checked = true;
-        geminiKeyGroup.style.display = 'block';
-        openaiConfigGroup.style.display = 'none';
+        if (geminiKeyGroup) {
+            geminiKeyGroup.style.display = 'block';
+        }
+        if (openaiConfigGroup) {
+            openaiConfigGroup.style.display = 'none';
+        }
     }
     
     // Update rate limit display
     updateRateLimitDisplay();
     
+    // Update API status
+    updateApiKeyStatus();
+    
+    // Show modal
     settingsModal.classList.add('active');
-    apiKeyInput.focus();
+    
+    // Focus on input
+    if (apiKeyInput) {
+        setTimeout(() => apiKeyInput.focus(), 100);
+    }
+    
+    console.log('Settings modal opened');
 }
 
 // Model selection change handler
 function handleModelChange() {
-    if (modelOpenAI.checked) {
-        geminiKeyGroup.style.display = 'none';
-        openaiConfigGroup.style.display = 'block';
+    const isOpenAI = modelOpenAI && modelOpenAI.checked;
+    
+    if (isOpenAI) {
+        if (geminiKeyGroup) {
+            geminiKeyGroup.style.display = 'none';
+        }
+        if (openaiConfigGroup) {
+            openaiConfigGroup.style.display = 'block';
+        }
         localStorage.setItem('selected_ai_model', 'openai');
     } else {
-        geminiKeyGroup.style.display = 'block';
-        openaiConfigGroup.style.display = 'none';
-        localStorage.setItem('selected_ai_model', 'gemini');
-    }
-}
-
-function closeSettingsModal() {
-    settingsModal.classList.remove('active');
-    apiKeyInput.value = '';
-}
-
-async function saveApiKey() {
-    // Save only Gemini API key (OpenAI-compatible is configured via environment variables only)
-    if (!modelOpenAI.checked) {
-        const geminiKey = apiKeyInput.value.trim();
-        
-        if (!geminiKey) {
-            window.AIService.clearApiKey();
-        } else {
-            window.AIService.setApiKey(geminiKey);
+        if (geminiKeyGroup) {
+            geminiKeyGroup.style.display = 'block';
         }
+        if (openaiConfigGroup) {
+            openaiConfigGroup.style.display = 'none';
+        }
+        localStorage.setItem('selected_ai_model', 'gemini');
     }
     
     updateApiKeyStatus();
     updateRateLimitDisplay();
-    closeSettingsModal();
 }
 
-async function testApiConnection() {
-    if (isTestingConnection) return;
-    
-    isTestingConnection = true;
-    statusDot.className = 'status-dot testing';
-    statusMessage.textContent = 'Testing connection...';
-    saveApiKeyBtn.disabled = true;
-
-    try {
-        let success = false;
-        
-        if (modelOpenAI.checked) {
-            // Test OpenAI-compatible API
-            if (window.AIService.isOpenAIConfigured()) {
-                await window.AIService.testOpenAIConnection();
-                success = true;
-                statusDot.className = 'status-dot configured';
-                statusMessage.textContent = 'OpenAI-compatible API key valid ✓';
-            } else {
-                throw new Error('OpenAI-compatible API key not configured');
-            }
-        } else {
-            // Test Gemini API
-            if (window.AIService.isApiKeyConfigured()) {
-                await window.AIService.testConnection();
-                success = true;
-                statusDot.className = 'status-dot configured';
-                statusMessage.textContent = 'Gemini API key valid ✓';
-            } else {
-                throw new Error('Gemini API key not configured');
-            }
-        }
-        
-        if (success) {
-            // Close modal after successful test
-            setTimeout(() => {
-                closeSettingsModal();
-            }, 1000);
-        }
-    } catch (error) {
-        statusDot.className = 'status-dot error';
-        statusMessage.textContent = error.message || 'Connection failed';
-    } finally {
-        isTestingConnection = false;
-        saveApiKeyBtn.disabled = false;
+function closeSettingsModal() {
+    if (settingsModal) {
+        settingsModal.classList.remove('active');
+    }
+    if (apiKeyInput) {
+        apiKeyInput.value = '';
     }
 }
 
+async function saveApiKey() {
+    console.log('Saving API key...');
+    
+    const isOpenAI = modelOpenAI && modelOpenAI.checked;
+    const geminiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+    
+    if (!isOpenAI) {
+        // Save Gemini API key
+        if (!geminiKey) {
+            if (window.AIService && window.AIService.clearApiKey) {
+                window.AIService.clearApiKey();
+            }
+            showToast('API Key Cleared', 'Your Gemini API key has been removed', 'info');
+        } else {
+            if (window.AIService && window.AIService.setApiKey) {
+                window.AIService.setApiKey(geminiKey);
+            }
+            showToast('API Key Saved', 'Your Gemini API key has been saved successfully!', 'success');
+        }
+    } else {
+        // For OpenAI-compatible, show info
+        showToast('Configuration Saved', 'Using pre-built AI model (rate limits apply)', 'info');
+    }
+    
+    // Update status displays
+    updateApiKeyStatus();
+    updateRateLimitDisplay();
+    
+    // Update button states after saving API key
+    updateEnhanceButtonState();
+    updateSummariseButtonState();
+    
+    // Close modal after a short delay to show the toast
+    setTimeout(() => {
+        closeSettingsModal();
+    }, 1500);
+}
+
 function updateApiKeyStatus() {
+    if (!statusDot || !statusMessage) return;
+    
     const selectedModel = localStorage.getItem('selected_ai_model') || 'gemini';
+    let isConfigured = false;
     
     if (selectedModel === 'openai') {
-        if (window.AIService.isOpenAIConfigured()) {
+        if (window.AIService && window.AIService.isOpenAIConfigured) {
+            isConfigured = window.AIService.isOpenAIConfigured();
+        }
+        if (isConfigured) {
             statusDot.className = 'status-dot configured';
             statusMessage.textContent = 'OpenAI-compatible API configured';
         } else {
@@ -555,7 +770,10 @@ function updateApiKeyStatus() {
             statusMessage.textContent = 'No OpenAI-compatible API key configured';
         }
     } else {
-        if (window.AIService.isApiKeyConfigured()) {
+        if (window.AIService && window.AIService.isApiKeyConfigured) {
+            isConfigured = window.AIService.isApiKeyConfigured();
+        }
+        if (isConfigured) {
             statusDot.className = 'status-dot configured';
             statusMessage.textContent = 'Gemini API key configured';
         } else {
@@ -563,32 +781,41 @@ function updateApiKeyStatus() {
             statusMessage.textContent = 'No Gemini API key configured';
         }
     }
+    
+    console.log('API key status updated:', isConfigured ? 'configured' : 'not configured');
 }
 
 function updateRateLimitDisplay() {
-    if (modelOpenAI.checked) {
+    if (!modelOpenAI || !modelOpenAI.checked) return;
+    
+    if (window.AIService && window.AIService.checkRateLimit) {
         const rateLimit = window.AIService.checkRateLimit();
-        requestsRemaining.textContent = `${rateLimit.remaining}/${window.APP_CONFIG.openaiCompatible.rateLimit.maxRequests}`;
-        
-        // Calculate time until reset
-        const now = new Date();
-        const resetDate = rateLimit.resetTime;
-        const diffMs = resetDate - now;
-        const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
-        const diffMinutes = Math.ceil(diffMs / (1000 * 60));
-        
-        if (diffHours > 0) {
-            resetTime.textContent = `${diffHours} hour${diffHours > 1 ? 's' : ''}`;
-        } else if (diffMinutes > 0) {
-            resetTime.textContent = `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
-        } else {
-            resetTime.textContent = 'soon';
+        if (requestsRemaining) {
+            requestsRemaining.textContent = `${rateLimit.remaining}/14`;
+        }
+        if (resetTimeEl) {
+            // Calculate time until reset
+            const now = new Date();
+            const resetDate = rateLimit.resetTime;
+            const diffMs = resetDate - now;
+            const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+            const diffMinutes = Math.ceil(diffMs / (1000 * 60));
+            
+            if (diffHours > 0) {
+                resetTimeEl.textContent = `${diffHours} hour${diffHours > 1 ? 's' : ''}`;
+            } else if (diffMinutes > 0) {
+                resetTimeEl.textContent = `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
+            } else {
+                resetTimeEl.textContent = 'soon';
+            }
         }
     }
 }
 
 // AI Enhancement Functions
 function updateEnhanceButtonState() {
+    if (!enhanceBtn || !outputText) return;
+    
     const hasText = outputText.value.trim() && outputText.value !== 'No text detected in the image.';
     
     // Check for API key based on selected model
@@ -596,11 +823,16 @@ function updateEnhanceButtonState() {
     let hasApiKey = false;
     
     if (selectedModel === 'openai') {
-        hasApiKey = window.AIService.isOpenAIConfigured();
+        if (window.AIService && window.AIService.isOpenAIConfigured) {
+            hasApiKey = window.AIService.isOpenAIConfigured();
+        }
     } else {
-        hasApiKey = window.AIService.isApiKeyConfigured();
+        if (window.AIService && window.AIService.isApiKeyConfigured) {
+            hasApiKey = window.AIService.isApiKeyConfigured();
+        }
     }
     
+    // Enable button if text exists and API key is configured
     enhanceBtn.disabled = !hasText || !hasApiKey || isEnhancing || isTextEnhanced;
     
     if (!hasApiKey) {
@@ -613,6 +845,8 @@ function updateEnhanceButtonState() {
 }
 
 function updateSummariseButtonState() {
+    if (!summariseBtn || !outputText) return;
+    
     const hasText = outputText.value.trim() && outputText.value !== 'No text detected in the image.';
     
     // Check for API key based on selected model
@@ -620,11 +854,16 @@ function updateSummariseButtonState() {
     let hasApiKey = false;
     
     if (selectedModel === 'openai') {
-        hasApiKey = window.AIService.isOpenAIConfigured();
+        if (window.AIService && window.AIService.isOpenAIConfigured) {
+            hasApiKey = window.AIService.isOpenAIConfigured();
+        }
     } else {
-        hasApiKey = window.AIService.isApiKeyConfigured();
+        if (window.AIService && window.AIService.isApiKeyConfigured) {
+            hasApiKey = window.AIService.isApiKeyConfigured();
+        }
     }
     
+    // Enable button if text exists and API key is configured
     summariseBtn.disabled = !hasText || !hasApiKey || isSummarising || hasSummary;
     
     if (!hasApiKey) {
@@ -637,16 +876,23 @@ function updateSummariseButtonState() {
 }
 
 async function enhanceText() {
-    if (isEnhancing || !originalOcrText) return;
+    if (isEnhancing || !originalOcrText) {
+        console.log('Enhance skipped: isEnhancing=' + isEnhancing + ', originalOcrText=' + originalOcrText);
+        return;
+    }
     
     // Check for API key based on selected model
     const selectedModel = localStorage.getItem('selected_ai_model') || 'gemini';
     let hasApiKey = false;
     
     if (selectedModel === 'openai') {
-        hasApiKey = window.AIService.isOpenAIConfigured();
+        if (window.AIService && window.AIService.isOpenAIConfigured) {
+            hasApiKey = window.AIService.isOpenAIConfigured();
+        }
     } else {
-        hasApiKey = window.AIService.isApiKeyConfigured();
+        if (window.AIService && window.AIService.isApiKeyConfigured) {
+            hasApiKey = window.AIService.isApiKeyConfigured();
+        }
     }
     
     if (!hasApiKey) {
@@ -656,53 +902,98 @@ async function enhanceText() {
     }
     
     // Check for minimum text length
-    if (originalOcrText.trim().length < 10) {
+    if (!originalOcrText || originalOcrText.trim().length < 10) {
         showToast('Text Too Short', 'Need at least 10 characters to enhance', 'info');
         return;
     }
     
+    console.log('Starting enhancement...');
     isEnhancing = true;
-    enhanceBtn.classList.add('loading');
-    enhanceBtn.querySelector('.btn-text').textContent = 'Enhancing';
-    enhanceBtn.disabled = true;
+    
+    // Show loading state
+    if (enhanceBtn) {
+        enhanceBtn.classList.add('loading');
+        const btnText = enhanceBtn.querySelector('.btn-text');
+        if (btnText) {
+            btnText.textContent = 'Enhancing';
+        }
+        enhanceBtn.disabled = true;
+        const spinner = enhanceBtn.querySelector('.btn-spinner');
+        if (spinner) {
+            spinner.style.display = 'block';
+        }
+    }
     
     try {
         let result;
         
         // Use appropriate API based on selected model
         if (selectedModel === 'openai') {
-            result = await window.AIService.cleanupTextOpenAI(originalOcrText);
+            if (window.AIService && window.AIService.cleanupTextOpenAI) {
+                result = await window.AIService.cleanupTextOpenAI(originalOcrText);
+            } else {
+                throw new Error('OpenAI-compatible service not available');
+            }
         } else {
-            result = await window.AIService.cleanupText(originalOcrText);
+            if (window.AIService && window.AIService.cleanupText) {
+                result = await window.AIService.cleanupText(originalOcrText);
+            } else {
+                throw new Error('Gemini service not available');
+            }
         }
         
         // Update text
-        outputText.value = result.text;
+        if (outputText) {
+            outputText.value = result.text;
+        }
         isTextEnhanced = true;
         
         // Show enhanced indicator
-        outputSection.classList.add('enhanced');
+        if (outputSection) {
+            outputSection.classList.add('enhanced');
+        }
         
         // Show undo button
-        undoBtn.style.display = 'flex';
+        if (undoBtn) {
+            undoBtn.style.display = 'flex';
+        }
         
         // Update token usage display (cumulative)
-        addToTokenUsage(result.usage);
+        if (result.usage) {
+            addToTokenUsage(result.usage);
+        }
         
         // Update word count
         updateWordCount();
         
         // Show success feedback
-        enhanceBtn.querySelector('.btn-text').textContent = 'Enhanced ✓';
+        if (enhanceBtn) {
+            const btnText = enhanceBtn.querySelector('.btn-text');
+            if (btnText) {
+                btnText.textContent = 'Enhanced ✓';
+            }
+        }
         showToast('Text Enhanced', 'OCR errors have been cleaned up', 'success');
         
     } catch (error) {
         console.error('Enhance Error:', error);
         showToast('Enhancement Failed', error.message || 'Failed to enhance text', 'error');
-        enhanceBtn.querySelector('.btn-text').textContent = 'Enhance';
+        // Reset button on error
+        if (enhanceBtn) {
+            const btnText = enhanceBtn.querySelector('.btn-text');
+            if (btnText) {
+                btnText.textContent = 'Enhance';
+            }
+            const spinner = enhanceBtn.querySelector('.btn-spinner');
+            if (spinner) {
+                spinner.style.display = 'none';
+            }
+        }
     } finally {
         isEnhancing = false;
-        enhanceBtn.classList.remove('loading');
+        if (enhanceBtn) {
+            enhanceBtn.classList.remove('loading');
+        }
         updateEnhanceButtonState();
     }
 }
@@ -710,16 +1001,28 @@ async function enhanceText() {
 function undoEnhance() {
     if (!originalOcrText) return;
     
-    outputText.value = originalOcrText;
+    if (outputText) {
+        outputText.value = originalOcrText;
+    }
     isTextEnhanced = false;
-    outputSection.classList.remove('enhanced');
-    undoBtn.style.display = 'none';
+    
+    if (outputSection) {
+        outputSection.classList.remove('enhanced');
+    }
+    if (undoBtn) {
+        undoBtn.style.display = 'none';
+    }
     
     // Update word count
     updateWordCount();
     
     // Reset enhance button
-    enhanceBtn.querySelector('.btn-text').textContent = 'Enhance';
+    if (enhanceBtn) {
+        const btnText = enhanceBtn.querySelector('.btn-text');
+        if (btnText) {
+            btnText.textContent = 'Enhance';
+        }
+    }
     updateEnhanceButtonState();
     
     showToast('Reverted', 'Text restored to original OCR output', 'info');
@@ -727,19 +1030,30 @@ function undoEnhance() {
 
 // Summarisation Functions
 async function summariseText() {
-    if (isSummarising) return;
+    if (isSummarising) {
+        console.log('Summarise skipped: already summarising');
+        return;
+    }
     
+    if (!outputText) return;
     const textToSummarise = outputText.value.trim();
-    if (!textToSummarise || textToSummarise === 'No text detected in the image.') return;
+    if (!textToSummarise || textToSummarise === 'No text detected in the image.') {
+        console.log('Summarise skipped: no text');
+        return;
+    }
     
     // Check for API key based on selected model
     const selectedModel = localStorage.getItem('selected_ai_model') || 'gemini';
     let hasApiKey = false;
     
     if (selectedModel === 'openai') {
-        hasApiKey = window.AIService.isOpenAIConfigured();
+        if (window.AIService && window.AIService.isOpenAIConfigured) {
+            hasApiKey = window.AIService.isOpenAIConfigured();
+        }
     } else {
-        hasApiKey = window.AIService.isApiKeyConfigured();
+        if (window.AIService && window.AIService.isApiKeyConfigured) {
+            hasApiKey = window.AIService.isApiKeyConfigured();
+        }
     }
     
     if (!hasApiKey) {
@@ -754,25 +1068,49 @@ async function summariseText() {
         return;
     }
     
+    console.log('Starting summarisation...');
     isSummarising = true;
-    summariseBtn.classList.add('loading');
-    summariseBtn.querySelector('.btn-text').textContent = 'Summarising';
-    summariseBtn.disabled = true;
+    
+    // Show loading state
+    if (summariseBtn) {
+        summariseBtn.classList.add('loading');
+        const btnText = summariseBtn.querySelector('.btn-text');
+        if (btnText) {
+            btnText.textContent = 'Summarising';
+        }
+        summariseBtn.disabled = true;
+        const spinner = summariseBtn.querySelector('.btn-spinner');
+        if (spinner) {
+            spinner.style.display = 'block';
+        }
+    }
     
     // Show summary section in loading state
-    summarySection.style.display = 'block';
-    summarySection.classList.add('loading');
-    summarySection.classList.remove('collapsed');
-    summaryText.innerHTML = '<p>Generating summary...</p>';
+    if (summarySection) {
+        summarySection.style.display = 'block';
+        summarySection.classList.add('loading');
+        summarySection.classList.remove('collapsed');
+    }
+    if (summaryText) {
+        summaryText.innerHTML = '<p>Generating summary...</p>';
+    }
     
     try {
         let result;
         
         // Use appropriate API based on selected model
         if (selectedModel === 'openai') {
-            result = await window.AIService.summariseTextOpenAI(textToSummarise);
+            if (window.AIService && window.AIService.summariseTextOpenAI) {
+                result = await window.AIService.summariseTextOpenAI(textToSummarise);
+            } else {
+                throw new Error('OpenAI-compatible service not available');
+            }
         } else {
-            result = await window.AIService.summariseText(textToSummarise);
+            if (window.AIService && window.AIService.summariseText) {
+                result = await window.AIService.summariseText(textToSummarise);
+            } else {
+                throw new Error('Gemini service not available');
+            }
         }
         
         // Store and display summary
@@ -780,30 +1118,57 @@ async function summariseText() {
         hasSummary = true;
         
         // Format and display summary with markdown-like rendering
-        summaryText.innerHTML = formatSummary(result.text);
+        if (summaryText) {
+            summaryText.innerHTML = formatSummary(result.text);
+        }
         
         // Update token usage display (cumulative)
-        addToTokenUsage(result.usage);
+        if (result.usage) {
+            addToTokenUsage(result.usage);
+        }
         
         // Show success feedback
-        summariseBtn.querySelector('.btn-text').textContent = 'Summarised ✓';
+        if (summariseBtn) {
+            const btnText = summariseBtn.querySelector('.btn-text');
+            if (btnText) {
+                btnText.textContent = 'Summarised ✓';
+            }
+        }
         showToast('Summary Generated', 'Text has been summarised successfully', 'success');
         
     } catch (error) {
         console.error('Summarise Error:', error);
         showToast('Summarisation Failed', error.message || 'Failed to summarise text', 'error');
-        summariseBtn.querySelector('.btn-text').textContent = 'Summarise';
-        summarySection.style.display = 'none';
+        // Reset button on error
+        if (summariseBtn) {
+            const btnText = summariseBtn.querySelector('.btn-text');
+            if (btnText) {
+                btnText.textContent = 'Summarise';
+            }
+            const spinner = summariseBtn.querySelector('.btn-spinner');
+            if (spinner) {
+                spinner.style.display = 'none';
+            }
+        }
+        if (summarySection) {
+            summarySection.style.display = 'none';
+        }
         hasSummary = false;
     } finally {
         isSummarising = false;
-        summariseBtn.classList.remove('loading');
-        summarySection.classList.remove('loading');
+        if (summariseBtn) {
+            summariseBtn.classList.remove('loading');
+        }
+        if (summarySection) {
+            summarySection.classList.remove('loading');
+        }
         updateSummariseButtonState();
     }
 }
 
 function formatSummary(text) {
+    if (!text) return '';
+    
     // Convert markdown-like formatting to HTML
     let formatted = text
         // Bold text
@@ -826,7 +1191,9 @@ function formatSummary(text) {
 }
 
 function toggleSummary() {
-    summarySection.classList.toggle('collapsed');
+    if (summarySection) {
+        summarySection.classList.toggle('collapsed');
+    }
 }
 
 async function copySummary() {
@@ -836,16 +1203,18 @@ async function copySummary() {
         await navigator.clipboard.writeText(currentSummary);
         
         // Show feedback
-        const originalHTML = copySummaryBtn.innerHTML;
-        copySummaryBtn.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-        `;
-        
-        setTimeout(() => {
-            copySummaryBtn.innerHTML = originalHTML;
-        }, 2000);
+        if (copySummaryBtn) {
+            const originalHTML = copySummaryBtn.innerHTML;
+            copySummaryBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            `;
+            
+            setTimeout(() => {
+                copySummaryBtn.innerHTML = originalHTML;
+            }, 2000);
+        }
         
         showToast('Copied', 'Summary copied to clipboard', 'success', 2000);
         
@@ -859,20 +1228,28 @@ async function copySummary() {
 function addToTokenUsage(usage) {
     if (!usage) return;
     
-    totalUsage.inputTokens += usage.inputTokens;
-    totalUsage.outputTokens += usage.outputTokens;
-    totalUsage.totalTokens += usage.totalTokens;
-    totalUsage.totalCost += usage.cost.totalCost;
+    totalUsage.inputTokens += usage.inputTokens || 0;
+    totalUsage.outputTokens += usage.outputTokens || 0;
+    totalUsage.totalTokens += usage.totalTokens || 0;
+    totalUsage.totalCost += (usage.cost && usage.cost.totalCost) ? usage.cost.totalCost : 0;
     
     updateTokenUsageDisplay();
 }
 
 function updateTokenUsageDisplay() {
+    if (!tokenUsage || !inputTokensEl || !outputTokensEl || !totalTokensEl || !tokenCostEl) return;
+    
     tokenUsage.style.display = 'block';
     
-    inputTokensEl.textContent = window.AIService.formatTokenCount(totalUsage.inputTokens);
-    outputTokensEl.textContent = window.AIService.formatTokenCount(totalUsage.outputTokens);
-    totalTokensEl.textContent = window.AIService.formatTokenCount(totalUsage.totalTokens);
+    if (window.AIService && window.AIService.formatTokenCount) {
+        inputTokensEl.textContent = window.AIService.formatTokenCount(totalUsage.inputTokens);
+        outputTokensEl.textContent = window.AIService.formatTokenCount(totalUsage.outputTokens);
+        totalTokensEl.textContent = window.AIService.formatTokenCount(totalUsage.totalTokens);
+    } else {
+        inputTokensEl.textContent = totalUsage.inputTokens.toString();
+        outputTokensEl.textContent = totalUsage.outputTokens.toString();
+        totalTokensEl.textContent = totalUsage.totalTokens.toString();
+    }
     
     // Format cumulative cost
     const costFormatted = totalUsage.totalCost < 0.0001 
@@ -881,5 +1258,9 @@ function updateTokenUsageDisplay() {
     tokenCostEl.textContent = costFormatted;
 }
 
-// Initialize the app
-init();
+// Initialize the app when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
