@@ -18,7 +18,7 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3003;
 
 // Helper function to inject environment variables into HTML
 function injectEnvVars(htmlContent) {
@@ -37,16 +37,18 @@ function injectEnvVars(htmlContent) {
         });
     </script>`;
     
-    // Inject the environment variables script before the closing head tag
-    htmlContent = htmlContent.replace('</head>', `${envScript}\n</head>`);
+    // Try to inject before </head> first (for pages with head section)
+    if (htmlContent.includes('</head>')) {
+        htmlContent = htmlContent.replace('</head>', `${envScript}\n</head>`);
+    } else {
+        // For pages without head (like landing.html), inject at start of <body>
+        htmlContent = htmlContent.replace('<body', `${envScript}\n<body`);
+    }
     
     return htmlContent;
 }
 
-// Serve static files
-app.use(express.static('.'));
-
-// Serve the landing page with environment variables injected
+// Serve the landing page with environment variables injected (MUST come before static middleware)
 app.get('/landing.html', (req, res) => {
     const landingPath = path.join(__dirname, 'landing.html');
     let htmlContent = fs.readFileSync(landingPath, 'utf8');
@@ -54,13 +56,23 @@ app.get('/landing.html', (req, res) => {
     res.send(htmlContent);
 });
 
-// Serve the main page with environment variables injected
+// Serve the main page with environment variables injected (MUST come before static middleware)
 app.get('/', (req, res) => {
     const indexPath = path.join(__dirname, 'index.html');
     let htmlContent = fs.readFileSync(indexPath, 'utf8');
     htmlContent = injectEnvVars(htmlContent);
     res.send(htmlContent);
 });
+
+// Serve static files (CSS, JS, images, etc.)
+app.use(express.static('.', {
+    setHeaders: (res, path) => {
+        // Don't cache HTML files - they need to go through our injection
+        if (path.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache');
+        }
+    }
+}));
 
 // Handle favicon request
 app.get('/favicon.ico', (req, res) => {
