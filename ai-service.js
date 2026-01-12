@@ -449,14 +449,23 @@ async function callOpenAICompatible(systemPrompt, userContent, maxTokens = 2048)
     };
 
     try {
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+            controller.abort();
+        }, 30000); // 30 second timeout
+        
         const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${config.apiKey}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody),
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -487,14 +496,28 @@ async function callOpenAICompatible(systemPrompt, userContent, maxTokens = 2048)
             
             // Extract token usage from response
             const usage = data.usage || {};
-            const inputTokens = usage.prompt_tokens || 0;
-            const outputTokens = usage.completion_tokens || 0;
-            const totalTokens = usage.total_tokens || (inputTokens + outputTokens);
+            let inputTokens = usage.prompt_tokens || 0;
+            let outputTokens = usage.completion_tokens || 0;
+            let totalTokens = usage.total_tokens || (inputTokens + outputTokens);
+            
+            // If API doesn't return token counts, estimate them
+            // Rough approximation: 1 token ≈ 4 characters for English text
+            if (inputTokens === 0 && outputTokens === 0) {
+                // Estimate input tokens from the user content length
+                const systemPromptLength = systemPrompt.length;
+                const userContentLength = userContent.length;
+                const totalInputLength = systemPromptLength + userContentLength;
+                inputTokens = Math.ceil(totalInputLength / 4);
+                
+                // Estimate output tokens from response text
+                outputTokens = Math.ceil(responseText.length / 4);
+                totalTokens = inputTokens + outputTokens;
+            }
             
             // Calculate cost using the new pricing configuration
             const cost = calculateOpenAICost(inputTokens, outputTokens);
             
-            return {
+            const result = {
                 text: responseText,
                 usage: {
                     inputTokens,
@@ -503,16 +526,21 @@ async function callOpenAICompatible(systemPrompt, userContent, maxTokens = 2048)
                     cost
                 }
             };
+            return result;
         }
 
         throw new Error('Unexpected API response format.');
 
     } catch (error) {
         // Re-throw if it's already our custom error
-        if (error.message.includes('API key') || 
-            error.message.includes('Rate limit') || 
+        if (error.name === 'AbortError') {
+            throw new Error('Request timed out. The API may be slow or unresponsive.');
+        }
+        if (error.message.includes('API key') ||
+            error.message.includes('Rate limit') ||
             error.message.includes('server error') ||
-            error.message.includes('No text content')) {
+            error.message.includes('No text content') ||
+            error.message.includes('timed out')) {
             throw error;
         }
         
