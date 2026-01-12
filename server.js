@@ -18,7 +18,7 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3005;
+const PORT = process.env.PORT || 3003;
 
 // Helper function to inject environment variables into HTML
 function injectEnvVars(htmlContent) {
