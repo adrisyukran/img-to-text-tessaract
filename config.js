@@ -8,15 +8,15 @@ const DEFAULT_CONFIG = {
     openaiCompatible: {
         apiKey: null, // Will be set via environment variables
         baseUrl: 'https://nano-gpt.com/api/v1',
-        model: 'chatgpt-4o-latest',
+        model: 'openai/gpt-oss-120b',
         rateLimit: {
-            maxRequests: 14,
+            maxRequests: 20,  // Increased to 20 requests per 24 hours
             windowHours: 24
         },
-        // Pricing per 1M tokens - $0.10/1M input, $0.20/1M output
+        // Pricing per 1M tokens 
         pricing: {
-            input: 0.10,
-            output: 0.20
+            input: 0.05,
+            output: 0.25
         }
     },
     storageKeys: {
