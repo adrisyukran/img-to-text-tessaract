@@ -222,18 +222,35 @@
 </svg>
 Copy
 </button>
-<button class="btn-enhance inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-pink-500 to-orange-500 px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity" id="enhanceBtn" title="Enhance text with AI">
-<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<button class="btn-enhance relative inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-pink-500 to-orange-500 px-6 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-all min-w-[110px] overflow-visible" id="enhanceBtn" title="Enhance text with AI">
+<span class="btn-text flex items-center gap-2 whitespace-nowrap">
+<svg class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
 </svg>
-<span class="btn-text">Enhance</span>
-<div class="btn-spinner" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: none;"></div>
+Enhance
+</span>
+<div class="btn-loading hidden absolute inset-0 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-orange-500 rounded-lg">
+<svg class="btn-spinner h-4 w-4 text-white animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+</svg>
+<span class="text-sm whitespace-nowrap">Processing...</span>
+</div>
 </button>
-<button class="btn-summarise inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity" id="summariseBtn" title="Summarise text with AI">
-<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<button class="btn-summarise relative inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-all min-w-[120px] overflow-visible" id="summariseBtn" title="Summarise text with AI">
+<span class="btn-text flex items-center gap-2 whitespace-nowrap">
+<svg class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
 </svg>
-<span class="btn-text">Summarise</span>
+Summarise
+</span>
+<div class="btn-loading hidden absolute inset-0 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg">
+<svg class="btn-spinner h-4 w-4 text-white animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+</svg>
+<span class="text-sm whitespace-nowrap">Processing...</span>
+</div>
 </button>
 <button class="btn-undo inline-flex items-center gap-2 rounded-lg bg-gray-500 px-4 py-2 text-sm font-medium text-white hover:bg-gray-600 transition-colors" id="undoBtn" style="display: none;" title="Revert to original OCR text">
 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -599,21 +616,23 @@ Undo
 <div class="rate-limit-info" id="rateLimitInfo" style="padding: 12px; background: white; border-radius: 8px; border: 1px solid #e0e5f0;">
 <div style="display: flex; justify-content: space-between; align-items: center;">
 <span>Requests Remaining:</span>
-<span id="requestsRemaining">14/14</span>
+<span id="requestsRemaining" class="font-semibold text-primary">Loading...</span>
 </div>
-<div style="font-size: 0.85rem; color: #666; margin-top: 4px;">
-                                Resets in <span id="resetTime">24 hours</span>
-                            </div>
-<div style="font-size: 0.75rem; color: #888; margin-top: 4px;">
-                                Pricing: $0.10/1M input tokens, $0.20/1M output tokens
-                            </div>
+<div style="font-size: 0.85rem; color: #666; margin-top: 8px;">
+<span class="flex items-center gap-1">
+<svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+Resets in: <span id="resetTime" class="font-medium">--</span>
+</span>
+</div>
+<div style="font-size: 0.75rem; color: #888; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0e5f0;">
+<span class="flex items-center gap-1">
+<svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+Pricing: $0.10/1M input · $0.20/1M output
+</span>
+</div>
 </div>
 
 <div class="form-hint" style="margin-top: 15px; text-align: left;">
-<strong>Configuration:</strong> Set these environment variables on your server:<br>
-<code>OPENAI_COMPATIBLE_API_KEY</code> - Your API key<br>
-<code>OPENAI_COMPATIBLE_BASE_URL</code> - API endpoint (optional)<br>
-<code>OPENAI_COMPATIBLE_MODEL</code> - Model name (optional)
 </div>
 </div>
 </div>
@@ -625,7 +644,7 @@ Undo
 </div>
 <div class="modal-footer">
 <button class="btn-secondary" id="cancelModalBtn">Cancel</button>
-<button class="btn-primary" id="saveApiKeyBtn">Save</button>
+<button class="btn-save" id="saveApiKeyBtn">Save</button>
 </div>
 </div>
 </div>
@@ -902,7 +921,8 @@ Undo
         }
 
         .btn-primary,
-        .btn-secondary {
+        .btn-secondary,
+        .btn-save {
             padding: 10px 24px;
             border-radius: 8px;
             font-size: 1rem;
@@ -911,21 +931,36 @@ Undo
             transition: all 0.3s ease;
             border: none;
         }
-
+        
         .btn-primary {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
             color: white;
         }
-
+        
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
-
+        
         .btn-primary:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
+        }
+        
+        .btn-save {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-save:active {
+            transform: translateY(0);
         }
 
         .btn-secondary {
