@@ -79,7 +79,7 @@ app.get('/favicon.ico', (req, res) => {
     res.status(204).end();
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log('Environment variables for OpenAI-compatible API:');
     console.log('OPENAI_COMPATIBLE_API_KEY:', process.env.OPENAI_COMPATIBLE_API_KEY ? '[SET]' : '[NOT SET]');
