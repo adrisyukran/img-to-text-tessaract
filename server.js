@@ -18,7 +18,7 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 3005;
 
 // Helper function to inject environment variables into HTML
 function injectEnvVars(htmlContent) {
@@ -80,7 +80,7 @@ app.get('/favicon.ico', (req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://0.0.0.0:${PORT} (listening on all interfaces)`);
     console.log('Environment variables for OpenAI-compatible API:');
     console.log('OPENAI_COMPATIBLE_API_KEY:', process.env.OPENAI_COMPATIBLE_API_KEY ? '[SET]' : '[NOT SET]');
     console.log('OPENAI_COMPATIBLE_BASE_URL:', process.env.OPENAI_COMPATIBLE_BASE_URL || '[USING DEFAULT]');
