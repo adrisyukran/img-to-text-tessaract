@@ -1,263 +1,654 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image to Text Converter - Tesseract OCR</title>
-    <link rel="stylesheet" href="style.css">
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Imagrock - AI Powered OCR</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#667fea",
+                        "primary-dark": "#5061b5",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111421",
+                        "card-dark": "#1c1e26",
+                        "border-dark": "#292c38",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(28, 30, 38, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #ffffff 0%, #667fea 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .glow-bg {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(102, 127, 234, 0.15) 0%, rgba(102, 127, 234, 0) 70%);
+            border-radius: 50%;
+            z-index: 0;
+            pointer-events: none;
+        }@keyframes dash {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+        .dashed-border-rect {
+            fill: none;
+            stroke: #667fea;
+            stroke-width: 2;
+            stroke-dasharray: 10, 10;
+            stroke-dashoffset: 200;
+            animation: dash 5s linear infinite;
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <div class="header-text">
-                    <h1>📷 Image to Text Converter</h1>
-                    <p>Upload an image or paste from clipboard (Ctrl+V)</p>
-                </div>
-                <button class="btn-settings" id="settingsBtn" title="Settings">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                    </svg>
-                </button>
-            </div>
-        </header>
-
-        <main>
-            <!-- Image Input Section -->
-            <section class="input-section">
-                <div class="upload-area" id="uploadArea">
-                    <div class="upload-content">
-                        <svg class="upload-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
-                        <p class="upload-text">Click to select image or paste from clipboard</p>
-                        <p class="upload-hint">Supports: JPG, PNG, BMP, GIF</p>
+<body class="bg-background-light dark:bg-background-dark font-body text-gray-900 dark:text-white overflow-x-hidden selection:bg-primary selection:text-white">
+<header class="sticky top-0 z-50 w-full border-b border-gray-200 dark:border-border-dark bg-white/80 dark:bg-[#111217]/80 backdrop-blur-md">
+<div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+<div class="flex h-16 items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="flex size-8 items-center justify-center rounded-lg bg-primary/20 text-primary">
+<span class="material-symbols-outlined text-2xl">document_scanner</span>
+</div>
+<span class="font-display text-xl font-bold tracking-tight">Imagrock</span>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#features">Features</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#how-it-works">How It Works</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#use-cases">Use Cases</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#try-now">Try Now</a>
+</nav>
+<div class="flex items-center gap-4">
+</div>
+</div>
+</div>
+</header>
+<main class="relative flex flex-col items-center">
+<section class="relative w-full overflow-hidden pt-12 pb-24 md:pt-20 md:pb-32 px-4 sm:px-6 lg:px-8">
+<div class="glow-bg -top-20 -left-20"></div>
+<div class="glow-bg bottom-0 right-0 opacity-50"></div>
+<div class="mx-auto max-w-7xl relative z-10 grid gap-12 lg:grid-cols-2 lg:gap-8 items-center">
+<div class="flex flex-col gap-6 text-center lg:text-left">
+<div class="inline-flex items-center gap-2 self-center lg:self-start rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+<span class="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+                        New AI Model v2.0 Released
                     </div>
-                    <input type="file" id="fileInput" accept="image/*" hidden>
-                </div>
-
-                <!-- Image Preview -->
-                <div class="preview-container" id="previewContainer" style="display: none;">
-                    <div class="preview-header">
-                        <span>Image Preview</span>
-                        <button class="btn-clear" id="clearBtn">Clear</button>
-                    </div>
-                    <img id="imagePreview" alt="Preview">
-                </div>
-            </section>
-
-            <!-- Processing Status -->
-            <div class="status-section" id="statusSection" style="display: none;">
-                <div class="status-content">
-                    <div class="loader"></div>
-                    <p id="statusText">Processing image...</p>
-                </div>
-            </div>
-
-            <!-- Text Output Section -->
-            <section class="output-section" id="outputSection" style="display: none;">
-                <div class="output-header">
-                    <h2>Extracted Text</h2>
-                    <div class="output-actions">
-                        <button class="btn-copy" id="copyBtn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                            </svg>
-                            Copy
+<h1 class="font-display text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+                        Transform Images to <br/>
+<span class="text-primary">Text Instantly</span>
+</h1>
+<p class="mx-auto max-w-2xl text-lg text-gray-600 dark:text-gray-400 lg:mx-0">
+                        Unlock the power of AI-enhanced OCR to convert documents, receipts, and handwritten notes into editable text in seconds with 99.8% accuracy.
+                    </p>
+<div class="mt-4 flex flex-col gap-4 sm:flex-row sm:justify-center lg:justify-start">
+<a class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-8 text-base font-bold text-white transition-all hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/25 cursor-pointer" href="#try-now">
+                            Try It Now
+                            <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</a>
+<button class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-border-dark bg-white dark:bg-card-dark px-8 text-base font-bold text-gray-900 dark:text-white transition-all hover:bg-gray-50 dark:hover:bg-[#252833]">
+                            Learn More
                         </button>
-                        <button class="btn-enhance" id="enhanceBtn" title="Enhance text with AI">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z"></path>
-                            </svg>
-                            <span class="btn-text">Enhance</span>
-                        </button>
-                        <button class="btn-summarise" id="summariseBtn" title="Summarise text with AI">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="8" y1="6" x2="21" y2="6"></line>
-                                <line x1="8" y1="12" x2="21" y2="12"></line>
-                                <line x1="8" y1="18" x2="21" y2="18"></line>
-                                <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                                <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                                <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                            </svg>
-                            <span class="btn-text">Summarise</span>
-                        </button>
-                        <button class="btn-undo" id="undoBtn" style="display: none;" title="Revert to original OCR text">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 7v6h6"></path>
-                                <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
-                            </svg>
-                            Undo
-                        </button>
-                    </div>
-                </div>
-                <textarea id="outputText" readonly placeholder="Extracted text will appear here..."></textarea>
-                
-                <!-- Word Count Display -->
-                <div class="word-count" id="wordCount">
-                    <span id="charCount">0</span> characters · <span id="wordCountNum">0</span> words
-                </div>
-                
-                <!-- Token Usage Display -->
-                <div class="token-usage" id="tokenUsage" style="display: none;">
-                    <div class="token-usage-header">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M12 6v6l4 2"></path>
-                        </svg>
-                        <span>AI Usage</span>
-                    </div>
-                    <div class="token-usage-details">
-                        <div class="token-stat">
-                            <span class="token-label">Input</span>
-                            <span class="token-value" id="inputTokens">0</span>
-                        </div>
-                        <div class="token-stat">
-                            <span class="token-label">Output</span>
-                            <span class="token-value" id="outputTokens">0</span>
-                        </div>
-                        <div class="token-stat">
-                            <span class="token-label">Total</span>
-                            <span class="token-value" id="totalTokens">0</span>
-                        </div>
-                        <div class="token-stat cost">
-                            <span class="token-label">Cost</span>
-                            <span class="token-value" id="tokenCost">Free</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Summary Section (Collapsible) -->
-                <div class="summary-section" id="summarySection" style="display: none;">
-                    <div class="summary-header" id="summaryHeader">
-                        <div class="summary-title">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                            </svg>
-                            <span>Summary</span>
-                        </div>
-                        <div class="summary-actions">
-                            <button class="btn-copy-summary" id="copySummaryBtn" title="Copy summary">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                </svg>
-                            </button>
-                            <button class="btn-toggle-summary" id="toggleSummaryBtn" title="Toggle summary">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="6 9 12 15 18 9"></polyline>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="summary-content" id="summaryContent">
-                        <div class="summary-text" id="summaryText"></div>
-                    </div>
-                </div>
-            </section>
-        </main>
+</div>
+<div class="mt-6 flex items-center justify-center gap-4 lg:justify-start text-sm text-gray-500">
+<div class="flex -space-x-2">
+</div>
+</div>
+</div>
+<div class="relative mx-auto w-full max-w-[600px] lg:max-w-none">
+<div class="relative rounded-2xl border border-gray-200 dark:border-border-dark bg-white dark:bg-card-dark p-2 shadow-2xl">
+<div class="absolute -top-12 -right-12 z-0 hidden lg:block">
+<div class="h-24 w-24 rounded-2xl bg-gradient-to-br from-primary to-purple-600 opacity-20 blur-2xl"></div>
+</div>
+<div class="relative z-10 grid gap-4 overflow-hidden rounded-xl bg-gray-50 dark:bg-[#111217] p-4 sm:grid-cols-2">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+<span class="material-symbols-outlined text-sm">image</span> Input Source
+                                </div>
+<div class="group relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-800">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" data-alt="Close up of a receipt or document with text" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDfQd8GaML9HhdYyvGzsBYtrAC0jsc32A9PRV55-ZkUURoiBPhKGilcOu01td612MN-JWd1jd0RAmcgoS8GTHU62GY0wbdHkEFtTkelIFwZ7PFisiA5Odf5Yx59hRo5P8rOHRrjbb7fnJpWRNUtknzdj0-iswx73G1Eq-ymDYAx0tm0-Xp4nIBtDCdHfoTSQotLythFJAs8PJ8nsLQWdB1i0vr5LIxN0ftHkFW1Y9D-OYibLkVDS4v3H65-pbTF7OYJ5ShS6CZarkCJ')"></div>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
+<div class="absolute left-0 top-0 h-1 w-full bg-primary shadow-[0_0_15px_rgba(102,127,234,0.8)] animate-[scan_3s_ease-in-out_infinite]"></div>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+<span class="flex items-center gap-2"><span class="material-symbols-outlined text-sm">description</span> Extracted Text</span>
+<span class="text-primary text-[10px] bg-primary/10 px-2 py-0.5 rounded-full">99% Confidence</span>
+</div>
+<div class="h-full rounded-lg border border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1c1e26] p-4 text-xs leading-relaxed text-gray-600 dark:text-gray-300 font-mono overflow-hidden relative">
+<p class="opacity-0 animate-[fadeIn_0.5s_ease-out_1s_forwards]">
+                                        RECEIPT #4920<br/>
+                                        DATE: 2023-10-24<br/>
+                                        TIME: 14:30 PM<br/><br/>
+                                        ITEM           QTY    PRICE<br/>
+                                        ---------------------------<br/>
+                                        Coffee Bean     2     $24.00<br/>
+                                        Milk Organic    1     $4.50<br/>
+                                        Sugar Cubes    1     $3.25<br/>
+                                        ---------------------------<br/>
+                                        TOTAL                  $31.75<br/><br/>
+                                        Thank you for your business!
+                                    </p>
+<div class="absolute bottom-4 right-4">
+<button class="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- OCR Tool Section -->
+<section class="w-full bg-gradient-to-b from-white to-gray-50 dark:from-[#16181d] dark:to-[#0f1115] py-20 px-4 sm:px-6 lg:px-8 border-y border-gray-100 dark:border-gray-800" id="try-now">
+<div class="mx-auto max-w-5xl">
+<div class="text-center mb-10">
+<h2 class="font-display text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">Try Our OCR Tool Now</h2>
+<p class="mt-3 text-lg text-gray-500 dark:text-gray-400">Upload an image or paste from clipboard (Ctrl+V)</p>
+<div class="mt-4 flex justify-center">
+<button class="btn-settings flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-[#252833] dark:text-gray-300 dark:hover:bg-[#2d303d]" id="settingsBtn" title="Settings">
+<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<circle cx="12" cy="12" r="3"></circle>
+<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+</svg>
+</button>
+</div>
+</div>
+<div class="bg-white dark:bg-card-dark rounded-2xl shadow-xl border border-gray-200 dark:border-border-dark overflow-hidden">
+<!-- Image Input Section -->
+<section class="input-section p-6">
+<div class="upload-area rounded-xl border-2 border-dashed border-gray-300 dark:border-border-dark bg-gray-50 dark:bg-[#111217] p-8 text-center cursor-pointer transition-colors hover:border-primary dark:hover:border-primary" id="uploadArea">
+<div class="upload-content">
+<svg class="upload-icon mx-auto h-16 w-16 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+</svg>
+<p class="upload-text mt-4 text-lg font-medium text-gray-900 dark:text-white">Click to select image or paste from clipboard</p>
+<p class="upload-hint mt-2 text-sm text-gray-500 dark:text-gray-400">Supports: JPG, PNG, BMP, GIF</p>
+</div>
+<input type="file" id="fileInput" accept="image/*" class="hidden">
+</div>
 
-        <footer>
-            <p>Powered by <a href="https://tesseract.projectnaptha.com/" target="_blank">Tesseract.js</a> & <a href="https://ai.google.dev/" target="_blank">Gemini AI</a></p>
-        </footer>
+<!-- Image Preview -->
+<div class="preview-container mt-6 rounded-lg border border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-[#111217] p-4" id="previewContainer" style="display: none;">
+<div class="preview-header flex justify-between items-center mb-3">
+<span class="text-sm font-medium text-gray-900 dark:text-white">Image Preview</span>
+<button class="btn-clear rounded-md bg-red-500 px-3 py-1 text-sm font-medium text-white hover:bg-red-600 transition-colors" id="clearBtn">Clear</button>
+</div>
+<img id="imagePreview" alt="Preview" class="mx-auto max-h-64 rounded-lg object-contain">
+</div>
+</section>
+
+<!-- Processing Status -->
+<div class="status-section p-6" id="statusSection" style="display: none;">
+<div class="status-content flex flex-col items-center justify-center py-8">
+<div class="loader h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+<p id="statusText" class="mt-4 text-lg font-medium text-gray-900 dark:text-white">Processing image...</p>
+</div>
+</div>
+
+<!-- Text Output Section -->
+<section class="output-section p-6" id="outputSection" style="display: none;">
+<div class="output-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+<h2 class="text-xl font-bold text-gray-900 dark:text-white">Extracted Text</h2>
+<div class="output-actions flex flex-wrap gap-2">
+<button class="btn-copy inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark transition-colors" id="copyBtn">
+<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+</svg>
+Copy
+</button>
+<button class="btn-enhance relative inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-pink-500 to-orange-500 px-6 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-all min-w-[110px] overflow-visible" id="enhanceBtn" title="Enhance text with AI">
+<span class="btn-text flex items-center gap-2 whitespace-nowrap">
+<svg class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+</svg>
+Enhance
+</span>
+<div class="btn-loading hidden absolute inset-0 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-orange-500 rounded-lg">
+<svg class="btn-spinner h-4 w-4 text-white animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+</svg>
+<span class="text-sm whitespace-nowrap">Processing...</span>
+</div>
+</button>
+<button class="btn-summarise relative inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-all min-w-[120px] overflow-visible" id="summariseBtn" title="Summarise text with AI">
+<span class="btn-text flex items-center gap-2 whitespace-nowrap">
+<svg class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+</svg>
+Summarise
+</span>
+<div class="btn-loading hidden absolute inset-0 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg">
+<svg class="btn-spinner h-4 w-4 text-white animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+</svg>
+<span class="text-sm whitespace-nowrap">Processing...</span>
+</div>
+</button>
+<button class="btn-undo inline-flex items-center gap-2 rounded-lg bg-gray-500 px-4 py-2 text-sm font-medium text-white hover:bg-gray-600 transition-colors" id="undoBtn" style="display: none;" title="Revert to original OCR text">
+<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+</svg>
+Undo
+</button>
+</div>
+</div>
+<textarea id="outputText" readonly placeholder="Extracted text will appear here..." class="w-full min-h-[200px] rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-[#111217] p-4 text-gray-900 dark:text-white focus:border-primary focus:ring-primary focus:ring-1"></textarea>
+
+<!-- Word Count Display -->
+<div class="word-count mt-3 text-right text-sm text-gray-500 dark:text-gray-400" id="wordCountEl" style="display: block;">
+<span id="charCount">0</span> characters · <span id="wordCountNum">0</span> words
+</div>
+
+<!-- Token Usage Display -->
+<div class="token-usage mt-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4" id="tokenUsage" style="display: none;">
+<div class="token-usage-header flex items-center gap-2 mb-3">
+<svg class="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<path d="M12 6v6l4 2"></path>
+</svg>
+<span class="font-medium text-blue-800 dark:text-blue-200">AI Usage</span>
+</div>
+<div class="token-usage-details grid grid-cols-2 sm:grid-cols-4 gap-3">
+<div class="token-stat">
+<span class="token-label block text-xs text-blue-600 dark:text-blue-300">Input</span>
+<span class="token-value font-medium text-blue-900 dark:text-blue-100" id="inputTokens">0</span>
+</div>
+<div class="token-stat">
+<span class="token-label block text-xs text-blue-600 dark:text-blue-300">Output</span>
+<span class="token-value font-medium text-blue-900 dark:text-blue-100" id="outputTokens">0</span>
+</div>
+<div class="token-stat">
+<span class="token-label block text-xs text-blue-600 dark:text-blue-300">Total</span>
+<span class="token-value font-medium text-blue-900 dark:text-blue-100" id="totalTokens">0</span>
+</div>
+<div class="token-stat cost">
+<span class="token-label block text-xs text-blue-600 dark:text-blue-300">Cost</span>
+<span class="token-value font-medium text-green-600 dark:text-green-400" id="tokenCost">Free</span>
+</div>
+</div>
+</div>
+
+<!-- Summary Section (Collapsible) -->
+<div class="summary-section mt-6 rounded-lg border border-gray-200 dark:border-border-dark bg-white dark:bg-[#111217]" id="summarySection" style="display: none;">
+<div class="summary-header flex justify-between items-center p-4 border-b border-gray-200 dark:border-border-dark cursor-pointer" id="summaryHeader">
+<div class="summary-title flex items-center gap-2">
+<svg class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+</svg>
+<span class="font-medium text-gray-900 dark:text-white">Summary</span>
+</div>
+<div class="summary-actions flex items-center gap-2">
+<button class="btn-copy-summary rounded-md p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" id="copySummaryBtn" title="Copy summary">
+<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+</svg>
+</button>
+<button class="btn-toggle-summary rounded-md p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" id="toggleSummaryBtn" title="Toggle summary">
+<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+</svg>
+</button>
+</div>
+</div>
+<div class="summary-content" id="summaryContent">
+<div class="summary-text p-4 text-gray-700 dark:text-gray-300" id="summaryText"></div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</section>
+<section class="w-full bg-white dark:bg-[#16181d] py-20 px-4 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-5xl">
+<div class="text-center mb-10">
+<h2 class="font-display text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">Try It Now for Free</h2>
+<p class="mt-3 text-lg text-gray-500 dark:text-gray-400">Experience our powerful OCR tool with AI enhancement features.</p>
+</div>
+<div class="grid gap-8 md:grid-cols-2">
+<div class="rounded-2xl bg-gradient-to-br from-primary/10 to-purple-500/10 p-8 dark:from-primary/20 dark:to-purple-500/20">
+<div class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-white">
+<span class="material-symbols-outlined">bolt</span>
+</div>
+<h3 class="mb-3 text-xl font-bold text-gray-900 dark:text-white">Lightning Fast Processing</h3>
+<p class="text-gray-600 dark:text-gray-300">Get results in seconds with our optimized OCR engine and real-time progress tracking.</p>
+</div>
+<div class="rounded-2xl bg-gradient-to-br from-pink-500/10 to-orange-500/10 p-8 dark:from-pink-500/20 dark:to-orange-500/20">
+<div class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 text-white">
+<span class="material-symbols-outlined">auto_fix_high</span>
+</div>
+<h3 class="mb-3 text-xl font-bold text-gray-900 dark:text-white">AI Text Enhancement</h3>
+<p class="text-gray-600 dark:text-gray-300">Clean up OCR errors and improve readability with our Gemini AI-powered enhancement.</p>
+</div>
+</div>
+<div class="mt-10 text-center">
+<a href="#try-now" class="inline-flex items-center gap-2 rounded-xl bg-primary px-8 py-4 text-base font-bold text-white transition-all hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/25">
+                    Access the Full OCR Tool
+                    <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+                </a>
+<p class="mt-4 text-sm text-gray-500 dark:text-gray-400">No signup required • Secure processing • Free to use</p>
+</div>
+</div>
+</section>
+<section class="w-full bg-white dark:bg-[#16181d] py-20 px-4 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-7xl">
+<div class="mb-12 text-center">
+<h2 class="font-display text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">Why Choose Our AI OCR?</h2>
+<p class="mt-4 text-lg text-gray-500 dark:text-gray-400">Experience the next generation of text extraction technology.</p>
+</div>
+<div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+<div class="group relative overflow-hidden rounded-2xl bg-gray-50 dark:bg-card-dark p-8 transition-all hover:-translate-y-1 hover:shadow-xl dark:border dark:border-border-dark dark:hover:border-primary/50">
+<div class="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-3xl">check_circle</span>
+</div>
+<h3 class="mb-3 font-display text-xl font-bold text-gray-900 dark:text-white">99% Accuracy</h3>
+<p class="text-gray-500 dark:text-gray-400">Powered by advanced neural networks that recognize text with near-human precision, even in low light.</p>
+</div>
+<div class="group relative overflow-hidden rounded-2xl bg-gray-50 dark:bg-card-dark p-8 transition-all hover:-translate-y-1 hover:shadow-xl dark:border dark:border-border-dark dark:hover:border-primary/50">
+<div class="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-3xl">translate</span>
+</div>
+<h3 class="mb-3 font-display text-xl font-bold text-gray-900 dark:text-white">Multi-language</h3>
+<p class="text-gray-500 dark:text-gray-400">Automatically detects and translates over 50 languages from any image source instantly.</p>
+</div>
+<div class="group relative overflow-hidden rounded-2xl bg-gray-50 dark:bg-card-dark p-8 transition-all hover:-translate-y-1 hover:shadow-xl dark:border dark:border-border-dark dark:hover:border-primary/50">
+<div class="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-3xl">ios_share</span>
+</div>
+<h3 class="mb-3 font-display text-xl font-bold text-gray-900 dark:text-white">Instant Export</h3>
+<p class="text-gray-500 dark:text-gray-400">Export directly to PDF, Word, Excel, or plain text formats with a single click seamless workflow.</p>
+</div>
+</div>
+</div>
+</section>
+<section class="w-full py-24 px-4 sm:px-6 lg:px-8" id="features">
+<div class="mx-auto max-w-7xl space-y-24">
+<div class="grid gap-12 lg:grid-cols-2 lg:items-center">
+<div class="order-2 lg:order-1 relative rounded-2xl border border-gray-200 dark:border-border-dark bg-white dark:bg-card-dark p-4 shadow-lg">
+<div class="overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800">
+<div class="aspect-video w-full bg-cover bg-center" data-alt="Handwritten notes on a notepad on a desk" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCmcpP-a_zc30bUViLqMYJXkdXModXx3EJNlItwNSdGabWt3H4I_M4vrpUUpcHzpYH3mMBFcbR0UHwS9iGwTE8F-G-RE_uAI7vo_1gEwgbmbQ_46-pRVuEEB-68MnF_Ky4ZDemtsdzZrIHvniUWLfqA7t7-KMzs1iyLBWCWgkshKV92sCcH1eTFCkzxf2Cf96A4oD0rYdsQFmc8vMX8FaTv0bjKH4tIlDsbvN2LTcE-IRSpPYTClfvQhQPWD8qq9E10WNZdk8dOwMGF')"></div>
+</div>
+<div class="absolute -right-4 -bottom-4 rounded-lg bg-white dark:bg-[#252833] p-4 shadow-xl border border-gray-100 dark:border-gray-700 max-w-[200px]">
+<div class="flex items-center gap-2 mb-2">
+<span class="h-2 w-2 rounded-full bg-green-500"></span>
+<span class="text-xs font-bold text-gray-900 dark:text-white">Handwriting Detected</span>
+</div>
+<div class="space-y-1">
+<div class="h-1.5 w-full rounded bg-gray-200 dark:bg-gray-700"></div>
+<div class="h-1.5 w-3/4 rounded bg-gray-200 dark:bg-gray-700"></div>
+</div>
+</div>
+</div>
+<div class="order-1 lg:order-2">
+<div class="inline-flex items-center gap-2 rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-500">
+                            Advanced Feature
+                        </div>
+<h2 class="mt-4 font-display text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">Handwriting Recognition</h2>
+<p class="mt-4 text-lg text-gray-500 dark:text-gray-400">
+                            Decipher messy handwritten notes and convert them into clean digital text. Perfect for students digitizing lecture notes or professionals archiving meeting minutes.
+                        </p>
+<ul class="mt-8 space-y-4">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-0.5">check</span>
+<span class="text-gray-600 dark:text-gray-300">Recognizes cursive and print styles</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-0.5">check</span>
+<span class="text-gray-600 dark:text-gray-300">Preserves layout and spacing</span>
+</li>
+</ul>
+</div>
+</div>
+<div class="grid gap-12 lg:grid-cols-2 lg:items-center relative">
+<div>
+<div class="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-500">
+<span class="flex h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+        Coming Soon
     </div>
+<h2 class="mt-4 font-display text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">Smart Table Extraction</h2>
+<p class="mt-4 text-lg text-gray-500 dark:text-gray-400">
+        Stop manual data entry. Our AI will soon be able to identify table structures in images and PDF documents, allowing you to export data directly into Excel or CSV spreadsheets.
+    </p>
+<ul class="mt-8 space-y-4 opacity-75">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-gray-400 mt-0.5">hourglass_empty</span>
+<span class="text-gray-600 dark:text-gray-300">Maintains row and column integrity</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-gray-400 mt-0.5">hourglass_empty</span>
+<span class="text-gray-600 dark:text-gray-300">Handles complex merged cells</span>
+</li>
+</ul>
+</div>
+<div class="relative rounded-2xl border border-gray-200 dark:border-border-dark bg-white dark:bg-card-dark p-4 shadow-lg opacity-75 grayscale hover:grayscale-0 transition-all duration-500">
+<div class="absolute inset-0 z-10 flex items-center justify-center bg-black/50 rounded-2xl backdrop-blur-[1px]">
+<span class="bg-black/70 text-white px-4 py-2 rounded-lg text-sm font-bold border border-white/10">Feature In Development</span>
+</div>
+<div class="overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800">
+<div class="aspect-video w-full bg-cover bg-center" data-alt="Spreadsheet data on a computer screen" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCS5pADz9WclhbBcs1ZPiuPN741f57y-HmETUY21OpeB7CT6rv1menucEzM3g3vTxs2FW9WrCpdgrD9rokdnn7HwZhQYH27vpYiVskS0xmhuaaaKyaohKCVFlnbsQCb8y1VNeVrnDg8h7mDZ7_MlSLuyI5lI7m0Y63US39mWFHxy4fQf2f5WpwdjzY7EXUlaWiSVLMZrGoqiSBXJtyxGbUYQkbtOl3kMSN06vdDp5zev4qKXU6sRZvpTAF4jx5vWC-9huNkxx65ejoH')"></div>
+</div>
+<div class="absolute -left-4 -bottom-4 rounded-lg bg-white dark:bg-[#252833] p-4 shadow-xl border border-gray-100 dark:border-gray-700 flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded bg-[#1D6F42] text-white">
+<span class="material-symbols-outlined">table_view</span>
+</div>
+<div>
+<div class="text-sm font-bold text-gray-900 dark:text-white">Export to Excel</div>
+<div class="text-xs text-amber-500">Pending Update</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="w-full bg-white dark:bg-[#16181d] py-24 px-4 sm:px-6 lg:px-8" id="how-it-works">
+<div class="mx-auto max-w-7xl text-center">
+<h2 class="font-display text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">How It Works</h2>
+<p class="mt-4 text-lg text-gray-500 dark:text-gray-400">Get your text in 3 simple steps.</p>
+<div class="mt-16 grid gap-8 md:grid-cols-3 relative">
+<div class="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-gray-200 dark:bg-gray-800 -z-0"></div>
+<div class="relative z-10 flex flex-col items-center">
+<div class="flex h-24 w-24 items-center justify-center rounded-2xl bg-white dark:bg-card-dark border border-gray-200 dark:border-border-dark shadow-sm mb-6">
+<span class="material-symbols-outlined text-4xl text-primary">upload_file</span>
+</div>
+<h3 class="text-xl font-bold text-gray-900 dark:text-white">1. Upload Image</h3>
+<p class="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-[250px]">Drag & drop any image (JPG, PNG) or PDF document.</p>
+</div>
+<div class="relative z-10 flex flex-col items-center">
+<div class="flex h-24 w-24 items-center justify-center rounded-2xl bg-white dark:bg-card-dark border border-gray-200 dark:border-border-dark shadow-sm mb-6">
+<span class="material-symbols-outlined text-4xl text-primary animate-spin" style="animation-duration: 3s;">settings_suggest</span>
+</div>
+<h3 class="text-xl font-bold text-gray-900 dark:text-white">2. AI Processing</h3>
+<p class="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-[250px]">Our engines scan and extract text with high precision.</p>
+</div>
+<div class="relative z-10 flex flex-col items-center">
+<div class="flex h-24 w-24 items-center justify-center rounded-2xl bg-white dark:bg-card-dark border border-gray-200 dark:border-border-dark shadow-sm mb-6">
+<span class="material-symbols-outlined text-4xl text-primary">download</span>
+</div>
+<h3 class="text-xl font-bold text-gray-900 dark:text-white">3. Download</h3>
+<p class="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-[250px]">Copy to clipboard or export as your preferred file format.</p>
+</div>
+</div>
+</div>
+</section>
+<section class="w-full py-24 px-4 sm:px-6 lg:px-8" id="use-cases">
+<div class="mx-auto max-w-7xl">
+<h2 class="font-display text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-12">Who is this for?</h2>
+<div class="grid gap-6 md:grid-cols-3">
+<div class="rounded-2xl border border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-card-dark p-6">
+<span class="material-symbols-outlined text-primary mb-4 text-3xl">school</span>
+<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Students</h3>
+<p class="text-gray-500 dark:text-gray-400 text-sm">Convert textbook photos and whiteboard notes into editable study materials quickly.</p>
+</div>
+<div class="rounded-2xl border border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-card-dark p-6">
+<span class="material-symbols-outlined text-primary mb-4 text-3xl">gavel</span>
+<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Legal Professionals</h3>
+<p class="text-gray-500 dark:text-gray-400 text-sm">Digitize scanned contracts and legal documents to make them searchable and editable.</p>
+</div>
+<div class="rounded-2xl border border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-card-dark p-6">
+<span class="material-symbols-outlined text-primary mb-4 text-3xl">database</span>
+<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Data Entry</h3>
+<p class="text-gray-500 dark:text-gray-400 text-sm">Automate invoice and receipt processing to save hours of manual typing.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<footer class="w-full border-t border-gray-200 dark:border-border-dark bg-white dark:bg-card-dark pt-16 pb-8 px-4 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-7xl">
+<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4 mb-12">
+<div>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary">document_scanner</span>
+<span class="font-display text-lg font-bold text-gray-900 dark:text-white">Imagrock</span>
+</div>
+<p class="text-sm text-gray-500 dark:text-gray-400">
+                        Advanced OCR technology made accessible for everyone. Convert images to text with ease.
+                    </p>
+</div>
+<div>
+<h3 class="font-bold text-gray-900 dark:text-white mb-4">Product</h3>
+<ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400">
+<li><a class="hover:text-primary transition-colors" href="#">Features</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">API</a></li>
+</ul>
+</div>
+<div>
 
-    <!-- Settings Modal -->
-    <div class="modal-overlay" id="settingsModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h2>⚙️ Settings</h2>
-                <button class="btn-close" id="closeModalBtn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <!-- AI Model Selection -->
-                <div class="form-group">
-                    <label>AI Model Selection</label>
-                    <div class="radio-group">
-                        <label class="radio-option">
-                            <input type="radio" name="aiModel" value="gemini" id="modelGemini" checked>
-                            <div class="radio-content">
-                                <span class="radio-label">Bring Your Own Gemini Key</span>
-                                <span class="radio-description">Use your own Google Gemini API key</span>
-                            </div>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="aiModel" value="openai" id="modelOpenAI">
-                            <div class="radio-content">
-                                <span class="radio-label">Pre-built AI Model (14 requests/day)</span>
-                                <span class="radio-description">Use built-in OpenAI-compatible model with rate limiting</span>
-                            </div>
-                        </label>
-                    </div>
-                </div>
+</ul>
+</div>
+<div>
 
-                <!-- Gemini API Key -->
-                <div class="form-group" id="geminiKeyGroup">
-                    <label for="apiKeyInput">Gemini API Key</label>
-                    <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key" autocomplete="off">
-                    <p class="form-hint">
+</ul>
+</div>
+</div>
+<div class="border-t border-gray-200 dark:border-border-dark pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-sm text-gray-500 dark:text-gray-400">© 2026 Imagrock by AdriSyukran. All rights reserved.</p>
+<div class="flex gap-4">
+<a class="text-gray-400 hover:text-white transition-colors" href="#"><span class="material-symbols-outlined text-[20px]">public</span></a>
+<a class="text-gray-400 hover:text-white transition-colors" href="#"><span class="material-symbols-outlined text-[20px]">mail</span></a>
+</div>
+</div>
+</div>
+</footer>
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+<div class="modal">
+<div class="modal-header">
+<h2>⚙️ Settings</h2>
+<button class="btn-close" id="closeModalBtn">&times;</button>
+</div>
+<div class="modal-body">
+<!-- AI Model Selection -->
+<div class="form-group">
+<label>AI Model Selection</label>
+<div class="radio-group">
+<label class="radio-option">
+<input type="radio" name="aiModel" value="gemini" id="modelGemini" checked>
+<div class="radio-content">
+<span class="radio-label">Bring Your Own Gemini Key</span>
+<span class="radio-description">Use your own Google Gemini API key</span>
+</div>
+</label>
+<label class="radio-option">
+<input type="radio" name="aiModel" value="openai" id="modelOpenAI">
+<div class="radio-content">
+<span class="radio-label">Pre-built AI Model (20 requests/day)</span>
+<span class="radio-description">Use built-in OpenAI-compatible model with rate limiting</span>
+</div>
+</label>
+</div>
+</div>
+
+<!-- Gemini API Key -->
+<div class="form-group" id="geminiKeyGroup">
+<label for="apiKeyInput">Gemini API Key</label>
+<input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key" autocomplete="off">
+<p class="form-hint">
                         Get your free API key from 
                         <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>
                     </p>
-                </div>
+</div>
 
-                <!-- OpenAI-Compatible API Configuration -->
-                <div class="form-group" id="openaiConfigGroup" style="display: none;">
-                    <div style="background: #f8f9ff; border-radius: 8px; border: 1px solid #e0e5f0; padding: 20px; text-align: center;">
-                        <h3 style="margin-top: 0; color: #333;">Pre-built AI Model</h3>
-                        <p style="color: #666; margin-bottom: 20px;">
+<!-- OpenAI-Compatible API Configuration -->
+<div class="form-group" id="openaiConfigGroup" style="display: none;">
+<div style="background: #f8f9ff; border-radius: 8px; border: 1px solid #e0e5f0; padding: 20px; text-align: center;">
+<h3 style="margin-top: 0; color: #333;">Pre-built AI Model</h3>
+<p style="color: #666; margin-bottom: 20px;">
                             This model is configured via backend environment variables.<br>
-                            Rate limiting: 14 requests per 24 hours.
+                            Rate limiting: 20 requests per 24 hours.
                         </p>
-                        
-                        <!-- Rate Limit Display -->
-                        <div class="rate-limit-info" id="rateLimitInfo" style="padding: 12px; background: white; border-radius: 8px; border: 1px solid #e0e5f0;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span>Requests Remaining:</span>
-                                <span id="requestsRemaining">14/14</span>
-                            </div>
-                            <div style="font-size: 0.85rem; color: #666; margin-top: 4px;">
-                                Resets in <span id="resetTime">24 hours</span>
-                            </div>
-                            <div style="font-size: 0.75rem; color: #888; margin-top: 4px;">
-                                Pricing: $0.10/1M input tokens, $0.20/1M output tokens
-                            </div>
-                        </div>
-                        
-                        <div class="form-hint" style="margin-top: 15px; text-align: left;">
-                            <strong>Configuration:</strong> Set these environment variables on your server:<br>
-                            <code>OPENAI_COMPATIBLE_API_KEY</code> - Your API key<br>
-                            <code>OPENAI_COMPATIBLE_BASE_URL</code> - API endpoint (optional)<br>
-                            <code>OPENAI_COMPATIBLE_MODEL</code> - Model name (optional)
-                        </div>
-                    </div>
-                </div>
 
-                <div class="api-status" id="apiStatus">
-                    <span class="status-dot" id="statusDot"></span>
-                    <span id="statusMessage">No API key configured</span>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" id="cancelModalBtn">Cancel</button>
-                <button class="btn-primary" id="saveApiKeyBtn">Save</button>
-            </div>
-        </div>
-    </div>
+<!-- Rate Limit Display -->
+<div class="rate-limit-info" id="rateLimitInfo" style="padding: 12px; background: white; border-radius: 8px; border: 1px solid #e0e5f0;">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<span>Requests Remaining:</span>
+<span id="requestsRemaining" class="font-semibold text-primary">Loading...</span>
+</div>
+<div style="font-size: 0.85rem; color: #666; margin-top: 8px;">
+<span class="flex items-center gap-1">
+<svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+Resets in: <span id="resetTime" class="font-medium">--</span>
+</span>
+</div>
+<div style="font-size: 0.75rem; color: #888; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0e5f0;">
+<span class="flex items-center gap-1">
+<svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+Pricing: $0.10/1M input · $0.20/1M output
+</span>
+</div>
+</div>
 
-    <!-- Toast Notification Container -->
-    <div class="toast-container" id="toastContainer"></div>
+<div class="form-hint" style="margin-top: 15px; text-align: left;">
+</div>
+</div>
+</div>
 
-    <!-- Load Tesseract.js from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <script>
+<div class="api-status" id="apiStatus">
+<span class="status-dot" id="statusDot"></span>
+<span id="statusMessage">No API key configured</span>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn-secondary" id="cancelModalBtn">Cancel</button>
+<button class="btn-save" id="saveApiKeyBtn">Save</button>
+</div>
+</div>
+</div>
+
+<!-- Toast Notification Container -->
+<div class="toast-container fixed bottom-6 right-6 z-50 flex flex-col gap-3" id="toastContainer"></div>
+
+<!-- Load Tesseract.js from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
         // Check if Tesseract is loaded
         if (typeof Tesseract === 'undefined') {
             console.error('Tesseract.js failed to load');
@@ -265,8 +656,477 @@
             console.log('Tesseract.js loaded successfully');
         }
     </script>
-    <script src="config.js"></script>
-    <script src="ai-service.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
+<script src="config.js"></script>
+<script src="ai-service.js"></script>
+<script src="script.js"></script>
+
+<style>
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9) translateY(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .modal-header h2 {
+            font-size: 1.4rem;
+            color: #333;
+            margin: 0;
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #666;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-close:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        /* Radio Group Styling */
+        .radio-group {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .radio-option {
+            display: block;
+            padding: 16px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .radio-option:last-child {
+            border-bottom: none;
+        }
+
+        .radio-option:hover {
+            background-color: #f8f9ff;
+        }
+
+        .radio-option input[type="radio"] {
+            display: none;
+        }
+
+        .radio-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .radio-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .radio-description {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .radio-option input[type="radio"]:checked + .radio-content {
+            color: var(--primary-color);
+        }
+
+        .radio-option input[type="radio"]:checked + .radio-content .radio-label {
+            color: var(--primary-color);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            background: #fff;
+            color: #333;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: #999;
+        }
+
+        /* Dark mode input styles */
+        @media (prefers-color-scheme: dark) {
+            .form-group input {
+                background: #1c1e26;
+                color: #fff;
+                border-color: #292c38;
+            }
+            
+            .form-group input::placeholder {
+                color: #888;
+            }
+        }
+        
+        /* Force dark mode input for modal */
+        .modal-overlay.active .modal .form-group input {
+            background: #1c1e26;
+            color: #fff;
+            border-color: #292c38;
+        }
+        
+        .modal-overlay.active .modal .form-group input::placeholder {
+            color: #888;
+        }
+
+        .form-hint {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .form-hint a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .form-hint a:hover {
+            text-decoration: underline;
+        }
+
+        /* API Status Indicator */
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ccc;
+            flex-shrink: 0;
+        }
+
+        .status-dot.configured {
+            background: #28a745;
+            box-shadow: 0 0 8px rgba(40, 167, 69, 0.5);
+        }
+
+        .status-dot.error {
+            background: #ff4757;
+            box-shadow: 0 0 8px rgba(255, 71, 87, 0.5);
+        }
+
+        .status-dot.testing {
+            background: #ffc107;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        #statusMessage {
+            color: #555;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 24px;
+            border-top: 1px solid #e0e0e0;
+            background: #f9f9f9;
+            border-radius: 0 0 16px 16px;
+        }
+
+        .btn-primary,
+        .btn-secondary,
+        .btn-save {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-save {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-save:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            transform: translateX(120%);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            pointer-events: auto;
+            max-width: 350px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast.hiding {
+            transform: translateX(120%);
+            opacity: 0;
+        }
+
+        .toast-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .toast-message {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .toast.success {
+            border-left: 4px solid #28a745;
+        }
+
+        .toast.success .toast-icon {
+            color: #28a745;
+        }
+
+        .toast.error {
+            border-left: 4px solid #ff4757;
+        }
+
+        .toast.error .toast-icon {
+            color: #ff4757;
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .toast.info .toast-icon {
+            color: var(--primary-color);
+        }
+
+        /* Loader Animation */
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #e0e0e0;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Upload Area */
+        .upload-area.dragover {
+            border-color: var(--primary-dark);
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        /* Output Section Enhanced */
+        .output-section.enhanced .output-header h2::after {
+            content: ' ✨';
+        }
+
+        /* Summary Section */
+        .summary-section.collapsed .summary-content {
+            display: none;
+        }
+
+        .summary-section.loading .summary-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px;
+        }
+
+        .summary-section.loading .summary-text {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* Responsive Modal */
+        @media (max-width: 480px) {
+            .modal {
+                max-width: 100%;
+            }
+
+            .modal-header {
+                padding: 16px 20px;
+            }
+
+            .modal-body {
+                padding: 20px;
+            }
+
+            .modal-footer {
+                padding: 16px 20px;
+                flex-direction: column;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                width: 100%;
+            }
+        }
+
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</body></html>
