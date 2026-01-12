@@ -37,6 +37,8 @@ A powerful, browser-based OCR (Optical Character Recognition) application powere
 - No images or text are sent anywhere except to Google's Gemini API (when you use AI features)
 - Works offline for basic OCR after initial load
 
+<!-- 
+
 ## 🚀 Quick Start
 
 ### Step 1: Open the App
@@ -66,7 +68,7 @@ Then visit `http://localhost:8000`
 3. Click **✨ Enhance** to clean up OCR errors
 4. Click **📝 Summarise** to get a quick summary
 5. Copy the results!
-
+-->
 ## 📖 How to Use
 
 ### Basic OCR
@@ -137,6 +139,7 @@ The AI Usage panel shows:
 - AI requests go directly from your browser to Google's API
 - No intermediary servers or data collection
 
+<!--
 ## 🔧 Customization
 
 ### Changing OCR Language
@@ -180,6 +183,7 @@ Edit `ai-service.js` to modify the AI behavior:
 **Issue**: "API key invalid" error
 - **Solution**: Get a new API key from [Google AI Studio](https://aistudio.google.com/apikey)
 
+-->
 ## 📁 Project Structure
 
 ```
@@ -189,7 +193,7 @@ img-to-text-tessaract/
 ├── style.css           # Styling and animations
 ├── ai-service.js       # Gemini API integration
 ├── README.md           # This file
-└── DEVELOPMENT_PLAN.md # Development documentation
+
 ```
 
 ## 🔮 Future Enhancements
@@ -201,6 +205,7 @@ Planned features for future development:
 - Document history and search
 - Export to PDF/Word
 
+<!--
 ## 📄 License
 
 This project is open source and available for personal and commercial use.
@@ -266,3 +271,4 @@ For production deployments, set environment variables according to your platform
 ---
 
 **Made with ❤️ using Tesseract OCR & Google Gemini AI**
+-->
