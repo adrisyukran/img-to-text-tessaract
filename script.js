@@ -98,14 +98,11 @@ function initButtonSpinners() {
 
 // Initialize event listeners
 function init() {
-    console.log('Initializing app...');
-    
     // Initialize button spinners
     initButtonSpinners();
     
     // Check if all required elements exist
     if (!uploadArea || !fileInput || !settingsBtn || !settingsModal) {
-        console.error('Required DOM elements not found');
         return;
     }
 
@@ -236,7 +233,12 @@ function init() {
         copyBtn.title = 'Copy to clipboard (Ctrl+Shift+C)';
     }
     
-    console.log('App initialized successfully');
+    // Start rate limit countdown refresh
+    setInterval(() => {
+        if (settingsModal && settingsModal.classList.contains('active')) {
+            updateRateLimitDisplay();
+        }
+    }, 1000);
 }
 
 // Handle file selection from input
@@ -331,8 +333,6 @@ async function performOCR(imageData) {
     }
     
     try {
-        console.log('Starting OCR process...');
-        
         // Check if Tesseract is loaded
         if (typeof Tesseract === 'undefined') {
             throw new Error('Tesseract.js is not loaded');
@@ -341,7 +341,6 @@ async function performOCR(imageData) {
         // Create Tesseract worker
         const worker = await Tesseract.createWorker('eng', 1, {
             logger: (m) => {
-                console.log('Tesseract log:', m);
                 // Update status based on progress
                 if (statusText) {
                     if (m.status === 'loading tesseract core') {
@@ -358,10 +357,8 @@ async function performOCR(imageData) {
             }
         });
         
-        console.log('Worker created, starting recognition...');
         // Perform OCR
         const { data: { text } } = await worker.recognize(imageData);
-        console.log('OCR completed, text extracted:', text.substring(0, 100) + '...');
         
         // Terminate worker
         await worker.terminate();
@@ -522,32 +519,10 @@ function resetApp() {
 // Reset button texts and spinner states
 function resetButtonStates() {
     // Reset enhance button
-    if (enhanceBtn) {
-        enhanceBtn.classList.remove('loading');
-        enhanceBtn.disabled = false;
-        const btnText = enhanceBtn.querySelector('.btn-text');
-        if (btnText) {
-            btnText.textContent = 'Enhance';
-        }
-        const spinner = enhanceBtn.querySelector('.btn-spinner');
-        if (spinner) {
-            spinner.style.display = 'none';
-        }
-    }
+    resetEnhanceButton();
     
     // Reset summarise button
-    if (summariseBtn) {
-        summariseBtn.classList.remove('loading');
-        summariseBtn.disabled = false;
-        const btnText = summariseBtn.querySelector('.btn-text');
-        if (btnText) {
-            btnText.textContent = 'Summarise';
-        }
-        const spinner = summariseBtn.querySelector('.btn-spinner');
-        if (spinner) {
-            spinner.style.display = 'none';
-        }
-    }
+    resetSummariseButton();
     
     // Reset word count
     if (charCountEl) {
@@ -786,28 +761,63 @@ function updateApiKeyStatus() {
 }
 
 function updateRateLimitDisplay() {
-    if (!modelOpenAI || !modelOpenAI.checked) return;
+    if (!modelOpenAI || !modelOpenAI.checked) {
+        // Still update display if not configured
+        if (requestsRemaining) {
+            requestsRemaining.textContent = 'Not configured';
+            requestsRemaining.classList.remove('text-primary');
+            requestsRemaining.classList.add('text-gray-400');
+        }
+        if (resetTimeEl) {
+            resetTimeEl.textContent = '--';
+        }
+        return;
+    }
     
     if (window.AIService && window.AIService.checkRateLimit) {
         const rateLimit = window.AIService.checkRateLimit();
+        
         if (requestsRemaining) {
-            requestsRemaining.textContent = `${rateLimit.remaining}/14`;
+            // Color code based on remaining requests
+            const remaining = rateLimit.remaining;
+            const maxRequests = 14;
+            const percentage = (remaining / maxRequests) * 100;
+            
+            requestsRemaining.textContent = `${remaining}/${maxRequests}`;
+            
+            // Apply color based on remaining
+            requestsRemaining.classList.remove('text-gray-400', 'text-primary', 'text-amber-500', 'text-red-500');
+            if (remaining === 0) {
+                requestsRemaining.classList.add('text-red-500');
+            } else if (percentage <= 25) {
+                requestsRemaining.classList.add('text-amber-500');
+            } else {
+                requestsRemaining.classList.add('text-primary');
+            }
         }
+        
         if (resetTimeEl) {
-            // Calculate time until reset
+            // Calculate time until reset with countdown
             const now = new Date();
             const resetDate = rateLimit.resetTime;
             const diffMs = resetDate - now;
-            const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
-            const diffMinutes = Math.ceil(diffMs / (1000 * 60));
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            const diffSeconds = Math.floor((diffMs % (1000 * 60)) / 1000);
             
-            if (diffHours > 0) {
-                resetTimeEl.textContent = `${diffHours} hour${diffHours > 1 ? 's' : ''}`;
+            if (diffMs <= 0) {
+                resetTimeEl.textContent = 'Resetting soon...';
+            } else if (diffHours > 0) {
+                resetTimeEl.textContent = `${diffHours}h ${diffMinutes}m`;
             } else if (diffMinutes > 0) {
-                resetTimeEl.textContent = `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
+                resetTimeEl.textContent = `${diffMinutes}m ${diffSeconds}s`;
             } else {
-                resetTimeEl.textContent = 'soon';
+                resetTimeEl.textContent = `${diffSeconds}s`;
             }
+        }
+    } else {
+        if (requestsRemaining) {
+            requestsRemaining.textContent = 'Loading...';
         }
     }
 }
@@ -911,36 +921,48 @@ async function enhanceText() {
     isEnhancing = true;
     
     // Show loading state
+    console.log('[Enhance] Setting loading state');
     if (enhanceBtn) {
         enhanceBtn.classList.add('loading');
+        enhanceBtn.disabled = true;
         const btnText = enhanceBtn.querySelector('.btn-text');
         if (btnText) {
-            btnText.textContent = 'Enhancing';
+            btnText.classList.add('hidden');
+            btnText.style.display = 'none';
         }
-        enhanceBtn.disabled = true;
-        const spinner = enhanceBtn.querySelector('.btn-spinner');
-        if (spinner) {
-            spinner.style.display = 'block';
+        const btnLoading = enhanceBtn.querySelector('.btn-loading');
+        if (btnLoading) {
+            btnLoading.classList.remove('hidden');
+            btnLoading.classList.add('flex');
+            btnLoading.style.display = 'flex';
         }
+        console.log('[Enhance] Loading state set, button HTML:', enhanceBtn.innerHTML.substring(0, 200));
     }
     
     try {
         let result;
         
         // Use appropriate API based on selected model
+        console.log('[Enhance] Calling AI service for model:', selectedModel);
         if (selectedModel === 'openai') {
             if (window.AIService && window.AIService.cleanupTextOpenAI) {
+                console.log('[Enhance] Awaiting cleanupTextOpenAI...');
                 result = await window.AIService.cleanupTextOpenAI(originalOcrText);
+                console.log('[Enhance] cleanupTextOpenAI returned:', result ? { type: typeof result, hasText: !!result.text, hasUsage: !!result.usage } : 'null');
             } else {
                 throw new Error('OpenAI-compatible service not available');
             }
         } else {
             if (window.AIService && window.AIService.cleanupText) {
+                console.log('[Enhance] Awaiting cleanupText (Gemini)...');
                 result = await window.AIService.cleanupText(originalOcrText);
+                console.log('[Enhance] cleanupText returned:', result ? { type: typeof result, hasText: !!result.text, hasUsage: !!result.usage } : 'null');
             } else {
                 throw new Error('Gemini service not available');
             }
         }
+        
+        console.log('[Enhance] About to process result');
         
         // Update text
         if (outputText) {
@@ -959,43 +981,107 @@ async function enhanceText() {
         }
         
         // Update token usage display (cumulative)
+        console.log('[Enhance] Result received:', { textLength: result.text?.length, usage: result.usage });
         if (result.usage) {
             addToTokenUsage(result.usage);
+        } else {
+            console.log('[Enhance] No usage data in result');
         }
         
         // Update word count
         updateWordCount();
         
-        // Show success feedback
+        // Show success feedback - reset button to show "Enhanced ✓"
+        console.log('[Enhance] Success - resetting button state');
         if (enhanceBtn) {
+            enhanceBtn.disabled = false;
+            enhanceBtn.classList.remove('loading');
+            
             const btnText = enhanceBtn.querySelector('.btn-text');
             if (btnText) {
-                btnText.textContent = 'Enhanced ✓';
+                btnText.classList.remove('hidden');
+                btnText.style.display = 'flex';
+                btnText.innerHTML = '<svg class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>Enhanced ✓';
+            }
+            
+            const btnLoading = enhanceBtn.querySelector('.btn-loading');
+            if (btnLoading) {
+                btnLoading.classList.add('hidden');
+                btnLoading.classList.remove('flex');
+                btnLoading.style.display = 'none';
             }
         }
         showToast('Text Enhanced', 'OCR errors have been cleaned up', 'success');
         
+        console.log('[Enhance] Button reset to completed state');
+        
     } catch (error) {
-        console.error('Enhance Error:', error);
+        console.error('[Enhance] Error:', error.message);
         showToast('Enhancement Failed', error.message || 'Failed to enhance text', 'error');
         // Reset button on error
-        if (enhanceBtn) {
-            const btnText = enhanceBtn.querySelector('.btn-text');
-            if (btnText) {
-                btnText.textContent = 'Enhance';
-            }
-            const spinner = enhanceBtn.querySelector('.btn-spinner');
-            if (spinner) {
-                spinner.style.display = 'none';
-            }
-        }
+        resetEnhanceButton();
     } finally {
+        console.log('[Enhance] Finally block executed');
         isEnhancing = false;
         if (enhanceBtn) {
             enhanceBtn.classList.remove('loading');
         }
         updateEnhanceButtonState();
     }
+}
+
+// Reset enhance button state
+function resetEnhanceButton() {
+    console.log('[Enhance] resetEnhanceButton called');
+    if (!enhanceBtn) {
+        console.log('[Enhance] enhanceBtn not found');
+        return;
+    }
+    enhanceBtn.disabled = false;
+    enhanceBtn.classList.remove('loading');
+    
+    const btnText = enhanceBtn.querySelector('.btn-text');
+    if (btnText) {
+        btnText.classList.remove('hidden');
+        btnText.style.display = 'flex';
+        btnText.innerHTML = '<svg class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>Enhance';
+    }
+    
+    const btnLoading = enhanceBtn.querySelector('.btn-loading');
+    if (btnLoading) {
+        btnLoading.classList.add('hidden');
+        btnLoading.classList.remove('flex');
+        btnLoading.style.display = 'none';
+    }
+    
+    console.log('[Enhance] Button reset complete');
+}
+
+// Reset summarise button state
+function resetSummariseButton() {
+    console.log('[Summarise] resetSummariseButton called');
+    if (!summariseBtn) {
+        console.log('[Summarise] summariseBtn not found');
+        return;
+    }
+    summariseBtn.disabled = false;
+    summariseBtn.classList.remove('loading');
+    
+    const btnText = summariseBtn.querySelector('.btn-text');
+    if (btnText) {
+        btnText.classList.remove('hidden');
+        btnText.style.display = 'flex';
+        btnText.innerHTML = '<svg class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>Summarise';
+    }
+    
+    const btnLoading = summariseBtn.querySelector('.btn-loading');
+    if (btnLoading) {
+        btnLoading.classList.add('hidden');
+        btnLoading.classList.remove('flex');
+        btnLoading.style.display = 'none';
+    }
+    
+    console.log('[Summarise] Button reset complete');
 }
 
 function undoEnhance() {
@@ -1072,17 +1158,22 @@ async function summariseText() {
     isSummarising = true;
     
     // Show loading state
+    console.log('[Summarise] Setting loading state');
     if (summariseBtn) {
         summariseBtn.classList.add('loading');
+        summariseBtn.disabled = true;
         const btnText = summariseBtn.querySelector('.btn-text');
         if (btnText) {
-            btnText.textContent = 'Summarising';
+            btnText.classList.add('hidden');
+            btnText.style.display = 'none';
         }
-        summariseBtn.disabled = true;
-        const spinner = summariseBtn.querySelector('.btn-spinner');
-        if (spinner) {
-            spinner.style.display = 'block';
+        const btnLoading = summariseBtn.querySelector('.btn-loading');
+        if (btnLoading) {
+            btnLoading.classList.remove('hidden');
+            btnLoading.classList.add('flex');
+            btnLoading.style.display = 'flex';
         }
+        console.log('[Summarise] Loading state set, button HTML:', summariseBtn.innerHTML.substring(0, 200));
     }
     
     // Show summary section in loading state
@@ -1123,38 +1214,48 @@ async function summariseText() {
         }
         
         // Update token usage display (cumulative)
+        console.log('[Summarise] Result received:', { textLength: result.text?.length, usage: result.usage });
         if (result.usage) {
             addToTokenUsage(result.usage);
+        } else {
+            console.log('[Summarise] No usage data in result');
         }
         
-        // Show success feedback
+        // Show success feedback - reset button to show "Summarised ✓"
+        console.log('[Summarise] Success - resetting button state');
         if (summariseBtn) {
+            summariseBtn.disabled = false;
+            summariseBtn.classList.remove('loading');
+            
             const btnText = summariseBtn.querySelector('.btn-text');
             if (btnText) {
-                btnText.textContent = 'Summarised ✓';
+                btnText.classList.remove('hidden');
+                btnText.style.display = 'flex';
+                btnText.innerHTML = '<svg class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>Summarised ✓';
+            }
+            
+            const btnLoading = summariseBtn.querySelector('.btn-loading');
+            if (btnLoading) {
+                btnLoading.classList.add('hidden');
+                btnLoading.classList.remove('flex');
+                btnLoading.style.display = 'none';
             }
         }
         showToast('Summary Generated', 'Text has been summarised successfully', 'success');
         
+        console.log('[Summarise] Button reset to completed state');
+        
     } catch (error) {
-        console.error('Summarise Error:', error);
+        console.error('[Summarise] Error:', error.message);
         showToast('Summarisation Failed', error.message || 'Failed to summarise text', 'error');
         // Reset button on error
-        if (summariseBtn) {
-            const btnText = summariseBtn.querySelector('.btn-text');
-            if (btnText) {
-                btnText.textContent = 'Summarise';
-            }
-            const spinner = summariseBtn.querySelector('.btn-spinner');
-            if (spinner) {
-                spinner.style.display = 'none';
-            }
-        }
+        resetSummariseButton();
         if (summarySection) {
             summarySection.style.display = 'none';
         }
         hasSummary = false;
     } finally {
+        console.log('[Summarise] Finally block executed');
         isSummarising = false;
         if (summariseBtn) {
             summariseBtn.classList.remove('loading');
@@ -1226,36 +1327,73 @@ async function copySummary() {
 
 // Token usage tracking (cumulative)
 function addToTokenUsage(usage) {
-    if (!usage) return;
+    console.log('[Token Usage] addToTokenUsage called with:', usage);
+    
+    if (!usage) {
+        console.log('[Token Usage] No usage data provided');
+        return;
+    }
     
     totalUsage.inputTokens += usage.inputTokens || 0;
     totalUsage.outputTokens += usage.outputTokens || 0;
     totalUsage.totalTokens += usage.totalTokens || 0;
     totalUsage.totalCost += (usage.cost && usage.cost.totalCost) ? usage.cost.totalCost : 0;
     
+    console.log('[Token Usage] Updated totals:', totalUsage);
+    
     updateTokenUsageDisplay();
 }
 
 function updateTokenUsageDisplay() {
-    if (!tokenUsage || !inputTokensEl || !outputTokensEl || !totalTokensEl || !tokenCostEl) return;
+    console.log('[Token Usage] updateTokenUsageDisplay called');
+    console.log('[Token Usage] Elements found:', {
+        tokenUsage: !!tokenUsage,
+        inputTokensEl: !!inputTokensEl,
+        outputTokensEl: !!outputTokensEl,
+        totalTokensEl: !!totalTokensEl,
+        tokenCostEl: !!tokenCostEl
+    });
+    console.log('[Token Usage] Current totals:', totalUsage);
+    
+    if (!tokenUsage || !inputTokensEl || !outputTokensEl || !totalTokensEl || !tokenCostEl) {
+        console.error('[Token Usage] Missing DOM elements');
+        return;
+    }
     
     tokenUsage.style.display = 'block';
+    console.log('[Token Usage] Set tokenUsage display to block');
     
     if (window.AIService && window.AIService.formatTokenCount) {
-        inputTokensEl.textContent = window.AIService.formatTokenCount(totalUsage.inputTokens);
-        outputTokensEl.textContent = window.AIService.formatTokenCount(totalUsage.outputTokens);
-        totalTokensEl.textContent = window.AIService.formatTokenCount(totalUsage.totalTokens);
+        const formattedInput = window.AIService.formatTokenCount(totalUsage.inputTokens);
+        const formattedOutput = window.AIService.formatTokenCount(totalUsage.outputTokens);
+        const formattedTotal = window.AIService.formatTokenCount(totalUsage.totalTokens);
+        
+        console.log('[Token Usage] Formatted values:', { formattedInput, formattedOutput, formattedTotal });
+        
+        inputTokensEl.textContent = formattedInput;
+        outputTokensEl.textContent = formattedOutput;
+        totalTokensEl.textContent = formattedTotal;
     } else {
+        console.log('[Token Usage] Using default formatting');
         inputTokensEl.textContent = totalUsage.inputTokens.toString();
         outputTokensEl.textContent = totalUsage.outputTokens.toString();
         totalTokensEl.textContent = totalUsage.totalTokens.toString();
     }
     
     // Format cumulative cost
-    const costFormatted = totalUsage.totalCost < 0.0001 
-        ? 'Free (< $0.0001)' 
+    const costFormatted = totalUsage.totalCost < 0.0001
+        ? 'Free (< $0.0001)'
         : `$${totalUsage.totalCost.toFixed(6)}`;
     tokenCostEl.textContent = costFormatted;
+    console.log('[Token Usage] Set cost to:', costFormatted);
+    
+    // Verify DOM was updated
+    console.log('[Token Usage] DOM verification:', {
+        inputValue: inputTokensEl.textContent,
+        outputValue: outputTokensEl.textContent,
+        totalValue: totalTokensEl.textContent,
+        costValue: tokenCostEl.textContent
+    });
 }
 
 // Initialize the app when DOM is ready
