@@ -1,0 +1,42 @@
+{
+  "samples": [
+    {
+      "description": "A high-contrast printed page with generous spacing.",
+      "ground_truth": "../ground_truth/clean-letter.txt",
+      "id": "clean-letter",
+      "labels": [
+        "clean",
+        "printed"
+      ],
+      "page_count": 1,
+      "pdf": "clean-letter.pdf",
+      "title": "Clean letter"
+    },
+    {
+      "description": "A lightly rotated page that benefits from deskewing.",
+      "ground_truth": "../ground_truth/skewed-report.txt",
+      "id": "skewed-report",
+      "labels": [
+        "skew",
+        "printed"
+      ],
+      "page_count": 1,
+      "pdf": "skewed-report.pdf",
+      "title": "Skewed report"
+    },
+    {
+      "description": "A low-contrast page with deterministic scan noise.",
+      "ground_truth": "../ground_truth/noisy-invoice.txt",
+      "id": "noisy-invoice",
+      "labels": [
+        "noise",
+        "invoice"
+      ],
+      "page_count": 1,
+      "pdf": "noisy-invoice.pdf",
+      "title": "Noisy invoice"
+    }
+  ],
+  "schema_version": "1.0",
+  "seed": 20260920
+}

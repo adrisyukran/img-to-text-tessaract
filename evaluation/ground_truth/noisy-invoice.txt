@@ -1,0 +1,5 @@
+Invoice 2048
+
+Archive supplies                         120.00
+Scanning service                          85.00
+Total                                    205.00

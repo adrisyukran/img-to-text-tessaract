@@ -12,6 +12,8 @@ dependencies = [
     "numpy>=2.4.6",
     "opencv-python-headless>=5.0.0.93",
     "pytesseract>=0.3.13",
+    "jiwer>=4.0.0",
+    "reportlab>=5.0.1",
 ]
 
 [dependency-groups]
