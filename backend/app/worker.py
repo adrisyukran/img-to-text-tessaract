@@ -13,6 +13,7 @@ from backend.app.ingestion.validation import (
     ValidatedUpload,
     validate_upload,
 )
+from backend.app.pipeline.intelligence import build_basic_report
 from backend.app.pipeline.ocr import TesseractEngine
 from backend.app.pipeline.orchestrator import (
     CanonicalArtifactBuilder,
@@ -69,5 +70,6 @@ def process_hosted_job(job_id: str) -> None:
         ocr_engine=TesseractEngine(),
         correction_service=None,
         artifact_builder=CanonicalArtifactBuilder(),
+        intelligence_service=build_basic_report,
     )
     process_document(job_id, services)

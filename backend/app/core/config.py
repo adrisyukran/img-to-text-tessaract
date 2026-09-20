@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     hosted_provider_base_url: str | None = None
     hosted_provider_model: str | None = None
     hosted_provider_api_key: SecretStr | None = Field(default=None, repr=False)
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o-mini"
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
+    gemini_model: str = "gemini-2.0-flash"
+    hosted_quota_limit: int = Field(default=20, ge=0, le=1000)
+    hosted_quota_window_seconds: int = Field(default=86400, ge=60, le=604800)
 
 
 @lru_cache

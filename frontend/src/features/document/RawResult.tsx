@@ -1,4 +1,6 @@
 import type { CanonicalDocument, CorrectionPatch, DocumentBlock, OCRSpan } from "../../api/types";
+import { CorrectionInspector } from "../corrections/CorrectionInspector";
+import { ExportMenu } from "../exports/ExportMenu";
 
 function acceptedText(
   block: DocumentBlock,
@@ -26,7 +28,15 @@ function confidenceClass(confidence: number): string {
   return "confidence-high";
 }
 
-export function RawResult({ document }: { document: CanonicalDocument }) {
+export function RawResult({
+  document,
+  onDecide,
+  busyPatchId,
+}: {
+  document: CanonicalDocument;
+  onDecide: (patchId: string, status: "accepted" | "rejected") => void;
+  busyPatchId?: string | null;
+}) {
   const page = document.pages[0];
   const spanMap = new Map(page.spans.map((span) => [span.id, span]));
   return (
@@ -58,7 +68,7 @@ export function RawResult({ document }: { document: CanonicalDocument }) {
             <span>{page.blocks.length}</span>
           </div>
           {page.blocks.map((block) => (
-            <article className="text-block" key={block.id}>
+            <article className="text-block" id={"source-" + block.id} key={block.id}>
               <div className="text-block-meta">
                 <span>{block.kind.replace("_", " ")}</span>
                 <span className={confidenceClass(block.confidence)}>
@@ -82,7 +92,13 @@ export function RawResult({ document }: { document: CanonicalDocument }) {
             </article>
           ))}
         </div>
+        <CorrectionInspector
+          patches={document.corrections}
+          onDecide={onDecide}
+          busyPatchId={busyPatchId}
+        />
       </div>
+      <ExportMenu jobId={document.job_id} />
     </section>
   );
 }

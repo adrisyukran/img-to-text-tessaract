@@ -21,6 +21,8 @@ dependencies = [
     "sse-starlette>=3.4.11",
     "python-multipart>=0.0.32",
     "ulid-py>=1.1.0",
+    "python-docx>=1.2.0",
+    "nh3>=0.3.7",
 ]
 
 [dependency-groups]

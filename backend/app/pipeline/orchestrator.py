@@ -9,6 +9,7 @@ from backend.app.domain.document import (
     CanonicalDocument,
     CorrectionPatch,
     DocumentPage,
+    IntelligenceReport,
 )
 from backend.app.domain.jobs import JobRecord, JobStage
 from backend.app.ingestion.validation import UploadProblem, ValidatedUpload
@@ -53,6 +54,7 @@ UploadLoader = Callable[[JobRecord, JobWorkspace], ValidatedUpload]
 Renderer = Callable[[ValidatedUpload, JobWorkspace], list[RenderedPage]]
 Preprocessor = Callable[[RenderedPage, Path], PreprocessedPage]
 CorrectionService = Callable[[CanonicalDocument], list[CorrectionPatch]]
+IntelligenceService = Callable[[CanonicalDocument], IntelligenceReport]
 
 
 @dataclass(frozen=True)
@@ -65,6 +67,7 @@ class PipelineServices:
     ocr_engine: OCREngine
     correction_service: CorrectionService | None
     artifact_builder: ArtifactBuilder
+    intelligence_service: IntelligenceService | None = None
 
 
 def _update(
@@ -186,6 +189,17 @@ def process_document(job_id: str, services: PipelineServices) -> CanonicalDocume
             patches = services.correction_service(document)
             document = CanonicalDocument.model_validate(
                 document.model_copy(update={"corrections": patches})
+            )
+        if services.intelligence_service is not None:
+            record = _update(
+                services,
+                record,
+                stage=JobStage.intelligence,
+                progress=0.82,
+            )
+            report = services.intelligence_service(document)
+            document = CanonicalDocument.model_validate(
+                document.model_copy(update={"report": report})
             )
         services.repository.save_document(document)
 

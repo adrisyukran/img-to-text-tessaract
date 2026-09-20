@@ -7,7 +7,9 @@ import { RawResult } from "../features/document/RawResult";
 import { SampleGallery } from "../features/home/SampleGallery";
 import { UploadDropzone } from "../features/home/UploadDropzone";
 import { JobProgress } from "../features/jobs/JobProgress";
+import { ByokForm } from "../features/jobs/ByokForm";
 import { useJob } from "../features/jobs/useJob";
+import { IntelligenceReport } from "../features/report/IntelligenceReport";
 
 type Readiness = {
   status: string;
@@ -28,6 +30,7 @@ export function App() {
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [busyPatchId, setBusyPatchId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const job = useJob(activeJobId);
   const documentQuery = useQuery({
@@ -74,6 +77,48 @@ export function App() {
     } finally {
       setUploading(false);
     }
+  }
+
+  async function decidePatch(patchId: string, status: "accepted" | "rejected") {
+    if (!activeJobId) return;
+    setBusyPatchId(patchId);
+    try {
+      await api.patch("/jobs/" + activeJobId + "/corrections/" + patchId, {
+        body: JSON.stringify({ status }),
+        headers: { "Content-Type": "application/json" },
+      });
+      await documentQuery.refetch();
+    } catch (error) {
+      setActionError(
+        error instanceof ApiProblem ? error.message : "The correction decision could not be saved.",
+      );
+    } finally {
+      setBusyPatchId(null);
+    }
+  }
+
+  async function runByok(
+    provider: "gemini" | "openai_compatible",
+    apiKey: string,
+  ): Promise<void> {
+    if (!activeJobId) return;
+    setActionError(null);
+    try {
+      await api.post("/jobs/" + activeJobId + "/ai-correction", {
+        body: JSON.stringify({ provider, api_key: apiKey }),
+        headers: { "Content-Type": "application/json" },
+      });
+      await documentQuery.refetch();
+    } catch (error) {
+      setActionError(
+        error instanceof ApiProblem ? error.message : "The AI correction could not be completed.",
+      );
+    }
+  }
+
+  function showCitation(pageNumber: number, blockId: string) {
+    window.document.getElementById("source-" + blockId)?.scrollIntoView({ behavior: "smooth" });
+    setActionError("Source: page " + pageNumber + ", block " + blockId);
   }
 
   return (
@@ -186,7 +231,19 @@ export function App() {
             Connecting to the processing trace…
           </p>
         )}
-        {documentQuery.data && <RawResult document={documentQuery.data} />}
+        {documentQuery.data && (
+          <ByokForm onSubmit={runByok} disabled={documentQuery.isFetching} />
+        )}
+        {documentQuery.data && (
+          <>
+            <RawResult
+              document={documentQuery.data}
+              onDecide={decidePatch}
+              busyPatchId={busyPatchId}
+            />
+            <IntelligenceReport report={documentQuery.data.report} onCitation={showCitation} />
+          </>
+        )}
       </section>
 
       <SampleGallery samples={sampleList} onRun={startSample} busyId={busyId} />

@@ -73,6 +73,27 @@ export type CorrectionPatch = {
   status: "proposed" | "accepted" | "rejected";
 };
 
+export type ReportCitation = {
+  page_number: number;
+  block_ids: string[];
+};
+
+export type IntelligenceItem = {
+  text: string;
+  citations: ReportCitation[];
+};
+
+export type IntelligenceReport = {
+  summary: IntelligenceItem;
+  key_points: IntelligenceItem[];
+  entities: Array<{
+    kind: string;
+    value: string;
+    citations: ReportCitation[];
+  }>;
+  warnings: string[];
+};
+
 export type CanonicalDocument = {
   schema_version: "1.0";
   job_id: string;
@@ -85,5 +106,5 @@ export type CanonicalDocument = {
     blocks: DocumentBlock[];
   }>;
   corrections: CorrectionPatch[];
-  report: unknown | null;
+  report: IntelligenceReport | null;
 };

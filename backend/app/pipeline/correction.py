@@ -1,6 +1,6 @@
 import hashlib
 import re
-from dataclasses import dataclass
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -11,16 +11,17 @@ from backend.app.domain.document import (
 )
 
 
-@dataclass(frozen=True)
-class CorrectionCandidate:
-    id: str
-    page_number: int
-    block_id: str
-    span_ids: list[str]
-    original_text: str
+class CorrectionCandidate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    page_number: int = Field(ge=1)
+    block_id: str = Field(min_length=1)
+    span_ids: list[str] = Field(min_length=1)
+    original_text: str = Field(min_length=1)
     left_context: str
     right_context: str
-    ocr_confidence: float
+    ocr_confidence: float = Field(ge=0, le=1)
 
 
 class CorrectionProposal(BaseModel):
@@ -37,7 +38,7 @@ class CorrectionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     job_id: str = Field(min_length=1)
-    candidates: list[dict[str, str | int]]
+    candidates: list[dict[str, Any]]
 
 
 def _candidate_id(document: CanonicalDocument, block_id: str, span_id: str, text: str) -> str:

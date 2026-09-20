@@ -4,22 +4,33 @@ import asyncio
 import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Annotated, Any, cast
+from typing import Annotated, Any, Literal, cast
 
 import ulid
 from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 from sse_starlette import EventSourceResponse, ServerSentEvent
+from starlette.responses import Response
 
-from backend.app.domain.document import CanonicalDocument
+from backend.app.core.config import Settings
+from backend.app.core.rate_limit import QuotaExceeded, RedisQuotaLimiter
+from backend.app.domain.document import CanonicalDocument, CorrectionPatch, CorrectionStatus
 from backend.app.domain.jobs import JobRecord, JobStage
+from backend.app.exports.digital import DIGITAL_EXPORTERS
 from backend.app.ingestion.validation import UploadLimits, UploadProblem, validate_upload
-from backend.app.storage.job_repository import JobRepository
+from backend.app.pipeline.correction import (
+    CorrectionRequest,
+    apply_patch_status,
+    select_candidates,
+    validate_proposals,
+)
+from backend.app.providers.base import ProviderProblem
+from backend.app.storage.job_repository import JobRepository, RevisionConflict
 from backend.app.storage.workspaces import JobWorkspace
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
-_JOB_ID_PATTERN = re.compile(r"[0-9A-HJKMNP-TV-Z]{26}")
+_JOB_ID_PATTERN = re.compile(r"[A-Za-z0-9_-]{1,80}")
 
 
 class ProblemDetail(BaseModel):
@@ -53,6 +64,35 @@ class JobResponse(BaseModel):
     status_url: str
     events_url: str
     document_url: str
+
+
+class CorrectionDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: CorrectionStatus
+
+
+class CorrectionResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    patch: CorrectionPatch
+    derived_text: str
+    job_revision: int
+
+
+class AIRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    provider: Literal["gemini", "openai_compatible"] = "openai_compatible"
+    api_key: SecretStr | None = None
+
+
+class AIRunResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    patches: list[CorrectionPatch]
+    job_revision: int
+    remaining_hosted_documents: int | None
 
 
 def problem(
@@ -211,6 +251,229 @@ def get_document(request: Request, job_id: str) -> Any:
             stage=record.stage,
         )
     return document
+
+
+@router.patch(
+    "/{job_id}/corrections/{patch_id}",
+    response_model=CorrectionResponse,
+)
+def decide_correction(
+    request: Request,
+    job_id: str,
+    patch_id: str,
+    decision: CorrectionDecision,
+) -> Any:
+    record = _get_record(request, job_id)
+    if isinstance(record, JSONResponse):
+        return record
+    repository = _repository(request)
+    document = repository.get_document(job_id)
+    if document is None:
+        return problem(
+            409,
+            "result_not_ready",
+            "The document result is not ready yet.",
+            retryable=True,
+            stage=record.stage,
+        )
+    patch = next((item for item in document.corrections if item.id == patch_id), None)
+    if patch is None:
+        return problem(404, "correction_not_found", "The requested correction was not found.")
+    if patch.status is decision.status:
+        return CorrectionResponse(
+            patch=patch,
+            derived_text=document.accepted_text_for_block(patch.block_id),
+            job_revision=record.revision,
+        )
+
+    updated_document = apply_patch_status(document, patch_id, decision.status)
+    stale_artifacts = [
+        key
+        for key in record.artifact_keys
+        if key not in {"document_json", "report_json"}
+    ]
+    try:
+        updated_record = repository.update_document(
+            updated_document,
+            expected_revision=record.revision,
+            changes={
+                "artifact_keys": [
+                    key for key in record.artifact_keys if key not in stale_artifacts
+                ]
+            },
+        )
+    except RevisionConflict:
+        return problem(
+            409,
+            "document_changed",
+            "The document changed before this decision was saved.",
+            retryable=True,
+        )
+    updated_patch = next(item for item in updated_document.corrections if item.id == patch_id)
+    return CorrectionResponse(
+        patch=updated_patch,
+        derived_text=updated_document.accepted_text_for_block(updated_patch.block_id),
+        job_revision=updated_record.revision,
+    )
+
+
+@router.post("/{job_id}/ai-correction", response_model=AIRunResponse)
+async def run_ai_correction(
+    request: Request,
+    job_id: str,
+    run_request: AIRunRequest,
+) -> Any:
+    record = _get_record(request, job_id)
+    if isinstance(record, JSONResponse):
+        return record
+    repository = _repository(request)
+    document = repository.get_document(job_id)
+    if document is None:
+        return problem(
+            409,
+            "result_not_ready",
+            "The document result is not ready yet.",
+            retryable=True,
+            stage=record.stage,
+        )
+
+    settings = cast(Settings, request.app.state.settings)
+    limiter = cast(RedisQuotaLimiter, request.app.state.quota_limiter)
+    remaining: int | None = None
+    api_key = run_request.api_key
+    if api_key is None:
+        if not settings.hosted_provider_enabled:
+            return problem(
+                503,
+                "hosted_provider_disabled",
+                "Hosted AI is disabled. Supply a supported provider key to continue.",
+            )
+        if settings.hosted_provider_api_key is None:
+            return problem(
+                503,
+                "hosted_provider_unavailable",
+                "Hosted AI is not configured for this deployment.",
+                retryable=True,
+            )
+        identifier = request.client.host if request.client else "anonymous"
+        try:
+            remaining = limiter.consume(identifier)
+        except QuotaExceeded as error:
+            return problem(
+                429,
+                "hosted_quota_exhausted",
+                "The hosted AI quota is exhausted until " + error.reset_at.isoformat(),
+                retryable=True,
+            )
+        api_key = settings.hosted_provider_api_key
+
+    candidates = select_candidates(document)
+    if not candidates:
+        return AIRunResponse(
+            patches=[],
+            job_revision=record.revision,
+            remaining_hosted_documents=remaining,
+        )
+    correction_request = CorrectionRequest(
+        job_id=job_id,
+        candidates=[
+            {
+                "id": candidate.id,
+                "page_number": candidate.page_number,
+                "block_id": candidate.block_id,
+                "span_ids": candidate.span_ids,
+                "original_text": candidate.original_text,
+                "left_context": candidate.left_context,
+                "right_context": candidate.right_context,
+                "ocr_confidence": candidate.ocr_confidence,
+            }
+            for candidate in candidates
+        ],
+    )
+    try:
+        provider = request.app.state.provider_factory(run_request.provider, settings)
+        proposals = await provider.propose(correction_request, api_key)
+        patches = validate_proposals(document, candidates, proposals)
+    except ProviderProblem as error:
+        return problem(
+            429 if error.code == "provider_rate_limited" else 502,
+            error.code,
+            error.detail,
+            retryable=error.retryable,
+            stage=JobStage.correction,
+        )
+    except ValueError:
+        return problem(
+            502,
+            "invalid_provider_response",
+            "The provider returned unusable correction data.",
+            stage=JobStage.correction,
+        )
+
+    existing = {patch.id: patch for patch in document.corrections}
+    for patch in patches:
+        if patch.id not in existing or existing[patch.id].status is CorrectionStatus.proposed:
+            existing[patch.id] = patch
+    updated_document = document.model_copy(update={"corrections": list(existing.values())})
+    stale_artifacts = [
+        key
+        for key in record.artifact_keys
+        if key not in {"document_json", "report_json"}
+    ]
+    try:
+        updated_record = repository.update_document(
+            CanonicalDocument.model_validate(updated_document),
+            expected_revision=record.revision,
+            changes={
+                "artifact_keys": [
+                    key for key in record.artifact_keys if key not in stale_artifacts
+                ]
+            },
+        )
+    except RevisionConflict:
+        return problem(
+            409,
+            "document_changed",
+            "The document changed before the AI result was saved.",
+            retryable=True,
+        )
+    return AIRunResponse(
+        patches=patches,
+        job_revision=updated_record.revision,
+        remaining_hosted_documents=remaining,
+    )
+
+
+@router.get("/{job_id}/exports/{export_format}", response_model=None)
+def export_document(request: Request, job_id: str, export_format: str) -> Response:
+    record = _get_record(request, job_id)
+    if isinstance(record, JSONResponse):
+        return record
+    exporter = DIGITAL_EXPORTERS.get(export_format)
+    if exporter is None:
+        return problem(
+            404,
+            "export_not_supported",
+            "The requested export format is not supported.",
+        )
+    document = _repository(request).get_document(job_id)
+    if document is None:
+        return problem(
+            409,
+            "result_not_ready",
+            "The document result is not ready yet.",
+            retryable=True,
+            stage=record.stage,
+        )
+    return Response(
+        content=exporter.export(document),
+        media_type=exporter.media_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="document.{exporter.extension}"',
+            "X-Content-Type-Options": "nosniff",
+            "Cache-Control": "private, no-store",
+        },
+    )
 
 
 @router.get("/{job_id}/pages/{page_number}/image")

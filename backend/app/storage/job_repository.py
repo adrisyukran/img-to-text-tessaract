@@ -124,6 +124,51 @@ class JobRepository:
             pipe.expire(self._key(document.job_id), self.ttl_seconds)
             pipe.execute()
 
+    def update_document(
+        self,
+        document: CanonicalDocument,
+        expected_revision: int,
+        changes: Mapping[str, Any] | None = None,
+    ) -> JobRecord:
+        key = self._key(document.job_id)
+        with self.redis.pipeline() as pipe:
+            while True:
+                try:
+                    pipe.watch(key)  # type: ignore[no-untyped-call]
+                    raw = pipe.get(key)
+                    if raw is None:
+                        pipe.unwatch()
+                        raise JobNotFound(document.job_id)
+                    current = JobRecord.model_validate_json(self._text(raw))
+                    if current.revision != expected_revision:
+                        pipe.unwatch()
+                        raise RevisionConflict(document.job_id)
+                    now = datetime.now(UTC)
+                    updated = JobRecord.model_validate(
+                        current.model_copy(
+                            update={
+                                **dict(changes or {}),
+                                "revision": current.revision + 1,
+                                "expires_at": now + timedelta(seconds=self.ttl_seconds),
+                            }
+                        )
+                    )
+                    record_payload = updated.model_dump_json()
+                    pipe.multi()
+                    pipe.set(key, record_payload, ex=self.ttl_seconds)
+                    pipe.set(
+                        self._document_key(document.job_id),
+                        document.model_dump_json(),
+                        ex=self.ttl_seconds,
+                    )
+                    pipe.publish(self._channel(document.job_id), record_payload)
+                    pipe.rpush(self._events_key(document.job_id), record_payload)
+                    pipe.expire(self._events_key(document.job_id), self.ttl_seconds)
+                    pipe.execute()
+                    return updated
+                except WatchError:
+                    continue
+
     def get_document(self, job_id: str) -> CanonicalDocument | None:
         raw = self.redis.get(self._document_key(job_id))
         if raw is None:
