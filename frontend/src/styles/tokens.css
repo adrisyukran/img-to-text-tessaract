@@ -1,0 +1,12 @@
+:root {
+  color-scheme: light;
+  --ink: #18201d;
+  --muted: #68716c;
+  --paper: #f4f4ee;
+  --surface: rgba(255, 255, 252, 0.8);
+  --line: rgba(24, 32, 29, 0.14);
+  --accent: #d86f3d;
+  --accent-deep: #aa4723;
+  --teal: #1b8277;
+  --shadow: 0 24px 80px rgba(37, 48, 40, 0.12);
+}
