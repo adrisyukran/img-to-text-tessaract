@@ -1,6 +1,13 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { api } from "../api/client";
+import { ApiProblem, api } from "../api/client";
+import type { CanonicalDocument, JobStatus, PublicSample } from "../api/types";
+import { RawResult } from "../features/document/RawResult";
+import { SampleGallery } from "../features/home/SampleGallery";
+import { UploadDropzone } from "../features/home/UploadDropzone";
+import { JobProgress } from "../features/jobs/JobProgress";
+import { useJob } from "../features/jobs/useJob";
 
 type Readiness = {
   status: string;
@@ -13,6 +20,61 @@ export function App() {
     queryFn: () => api.get<Readiness>("/health/ready"),
     retry: false,
   });
+  const samples = useQuery({
+    queryKey: ["samples"],
+    queryFn: () => api.get<PublicSample[]>("/samples"),
+    retry: false,
+  });
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const job = useJob(activeJobId);
+  const documentQuery = useQuery({
+    queryKey: ["document", activeJobId],
+    queryFn: () => api.get<CanonicalDocument>("/jobs/" + activeJobId + "/document"),
+    enabled: job.data?.stage === "complete" && Boolean(activeJobId),
+    retry: false,
+  });
+  const sampleList = Array.isArray(samples.data) ? samples.data : [];
+
+  function showWorkspace() {
+    window.setTimeout(() => {
+      window.document.getElementById("workspace")?.scrollIntoView({ behavior: "smooth" });
+    }, 0);
+  }
+
+  async function startSample(sample: PublicSample) {
+    setActionError(null);
+    setBusyId(sample.id);
+    try {
+      const form = new FormData();
+      form.set("sample_id", sample.id);
+      const created = await api.post<JobStatus>("/jobs", { body: form });
+      setActiveJobId(created.id);
+      showWorkspace();
+    } catch (error) {
+      setActionError(error instanceof ApiProblem ? error.message : "The sample could not start.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function uploadFile(file: File) {
+    setActionError(null);
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      const created = await api.post<JobStatus>("/jobs", { body: form });
+      setActiveJobId(created.id);
+      showWorkspace();
+    } catch (error) {
+      setActionError(error instanceof ApiProblem ? error.message : "The upload could not start.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <main className="app-shell">
@@ -35,10 +97,14 @@ export function App() {
             summaries work together on a single document.
           </p>
           <div className="hero-actions">
-            <button className="button button-primary" type="button">
+            <button className="button button-primary" type="button" onClick={showWorkspace}>
               Try a sample <span aria-hidden="true">↗</span>
             </button>
-            <button className="button button-quiet" type="button">
+            <button
+              className="button button-quiet"
+              type="button"
+              onClick={() => window.document.getElementById("upload-input")?.click()}
+            >
               Upload a PDF
             </button>
           </div>
@@ -96,6 +162,34 @@ export function App() {
         />
         {readiness.isSuccess ? "Processing service online" : "Connecting to processing service"}
       </section>
+
+      <section id="workspace" className="workspace-section" aria-labelledby="workspace-heading">
+        <div className="workspace-intro">
+          <div>
+            <p className="eyebrow">Use the system</p>
+            <h2 id="workspace-heading">Start with a real scan.</h2>
+          </div>
+          <p>
+            Samples are pre-registered and measurable. Uploads stay in a short-lived isolated
+            workspace.
+          </p>
+        </div>
+        <UploadDropzone onSubmit={uploadFile} busy={uploading} />
+        {actionError && (
+          <p className="action-error" role="alert">
+            {actionError}
+          </p>
+        )}
+        {activeJobId && job.data && <JobProgress job={job.data} />}
+        {activeJobId && job.isPending && (
+          <p className="loading-note" role="status">
+            Connecting to the processing trace…
+          </p>
+        )}
+        {documentQuery.data && <RawResult document={documentQuery.data} />}
+      </section>
+
+      <SampleGallery samples={sampleList} onRun={startSample} busyId={busyId} />
     </main>
   );
 }

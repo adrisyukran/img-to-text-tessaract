@@ -5,7 +5,9 @@ from redis import Redis
 
 from backend.app.api.health import router as health_router
 from backend.app.api.jobs import router as jobs_router
+from backend.app.api.samples import router as samples_router
 from backend.app.core.config import Settings, get_settings
+from backend.app.ingestion.samples import SampleRegistry
 from backend.app.storage.job_repository import JobRepository
 from backend.app.worker import enqueue_job as enqueue_default_job
 
@@ -16,6 +18,7 @@ def create_app(
     repository: JobRepository | None = None,
     redis_client: Redis | None = None,
     enqueue_job: Callable[[str], None] | None = None,
+    sample_registry: SampleRegistry | None = None,
 ) -> FastAPI:
     resolved = settings or get_settings()
     app = FastAPI(title="Scanned PDF Intelligence API", version="1.0.0")
@@ -27,8 +30,10 @@ def create_app(
         resolved.artifact_ttl_seconds,
     )
     app.state.enqueue_job = enqueue_job or enqueue_default_job
+    app.state.samples = sample_registry or SampleRegistry.default()
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(jobs_router, prefix="/api/v1")
+    app.include_router(samples_router, prefix="/api/v1")
     return app
 
 

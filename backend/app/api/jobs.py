@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Annotated, Any, cast
 
 import ulid
-from fastapi import APIRouter, File, Request, UploadFile
+from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sse_starlette import EventSourceResponse, ServerSentEvent
@@ -107,16 +107,37 @@ def _get_record(request: Request, job_id: str) -> JobRecord | JSONResponse:
 async def create_job(
     request: Request,
     file: Annotated[UploadFile | None, File()] = None,
+    sample_id: Annotated[str | None, Form()] = None,
 ) -> Any:
-    if file is None:
+    if file is not None and sample_id is not None:
+        return problem(
+            422,
+            "ambiguous_job_source",
+            "Provide either an upload or a sample, not both.",
+        )
+    if file is None and sample_id is None:
         return problem(422, "missing_source", "Choose a PDF, PNG, or JPEG file.")
     settings = _settings(request)
-    content = await file.read(settings.max_upload_bytes + 1)
+    if sample_id is not None:
+        sample = request.app.state.samples.get(sample_id)
+        if sample is None:
+            return problem(404, "sample_not_found", "The requested sample was not found.")
+        try:
+            content = sample.pdf_path.read_bytes()
+        except OSError:
+            return problem(404, "sample_not_found", "The requested sample was not found.")
+        filename = f"{sample.public.id}.pdf"
+        declared_type = "application/pdf"
+    else:
+        assert file is not None
+        content = await file.read(settings.max_upload_bytes + 1)
+        filename = file.filename or "document"
+        declared_type = file.content_type or ""
     try:
         validated = validate_upload(
             content,
-            file.filename or "document",
-            file.content_type or "",
+            filename,
+            declared_type,
             UploadLimits(settings.max_upload_bytes, settings.max_pdf_pages),
         )
     except UploadProblem as error:

@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "test": "vitest",
+    "generate:api": "openapi-typescript openapi.json -o src/api/generated.ts",
+    "check:api": "npm run generate:api && git diff --exit-code -- src/api/generated.ts openapi.json",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -25,6 +27,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "jsdom": "^26.0.0",
     "msw": "^2.7.0",
+    "openapi-typescript": "^7.13.0",
     "typescript": "~5.7.2",
     "vite": "^6.1.0",
     "vitest": "^3.0.5"
