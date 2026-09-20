@@ -22,7 +22,7 @@ class RenderedPage:
 def render_pages(
     upload: ValidatedUpload,
     workspace: JobWorkspace,
-    dpi: int = 240,
+    dpi: int = 150,
 ) -> list[RenderedPage]:
     if dpi < 72 or dpi > 400:
         raise ValueError("dpi must be between 72 and 400")

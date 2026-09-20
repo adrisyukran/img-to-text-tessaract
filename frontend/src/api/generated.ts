@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/api/v1/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Capabilities */
+        get: operations["get_capabilities_api_v1_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/evaluation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Evaluation */
+        get: operations["get_evaluation_api_v1_evaluation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health/live": {
         parameters: {
             query?: never;
@@ -73,6 +107,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/jobs/{job_id}/ai-correction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run Ai Correction */
+        post: operations["run_ai_correction_api_v1_jobs__job_id__ai_correction_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/jobs/{job_id}/corrections/{patch_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Decide Correction */
+        patch: operations["decide_correction_api_v1_jobs__job_id__corrections__patch_id__patch"];
+        trace?: never;
+    };
     "/api/v1/jobs/{job_id}/document": {
         parameters: {
             query?: never;
@@ -99,6 +167,23 @@ export interface paths {
         };
         /** Job Events */
         get: operations["job_events_api_v1_jobs__job_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/jobs/{job_id}/exports/{export_format}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Document */
+        get: operations["export_document_api_v1_jobs__job_id__exports__export_format__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -162,6 +247,26 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AIRunRequest */
+        AIRunRequest: {
+            /** Api Key */
+            api_key?: string | null;
+            /**
+             * Provider
+             * @default openai_compatible
+             * @enum {string}
+             */
+            provider: "gemini" | "openai_compatible";
+        };
+        /** AIRunResponse */
+        AIRunResponse: {
+            /** Job Revision */
+            job_revision: number;
+            /** Patches */
+            patches: components["schemas"]["CorrectionPatch"][];
+            /** Remaining Hosted Documents */
+            remaining_hosted_documents: number | null;
+        };
         /**
          * BlockKind
          * @enum {string}
@@ -202,6 +307,24 @@ export interface components {
             /** Source Name */
             source_name: string;
         };
+        /** Capabilities */
+        Capabilities: {
+            /** Accepted Media Types */
+            accepted_media_types: string[];
+            /** Artifact Ttl Seconds */
+            artifact_ttl_seconds: number;
+            /** Byok Providers */
+            byok_providers: string[];
+            hosted_provider: components["schemas"]["HostedProviderCapabilities"];
+            /** Max Pdf Pages */
+            max_pdf_pages: number;
+            /** Max Upload Bytes */
+            max_upload_bytes: number;
+        };
+        /** CorrectionDecision */
+        CorrectionDecision: {
+            status: components["schemas"]["CorrectionStatus"];
+        };
         /** CorrectionPatch */
         CorrectionPatch: {
             /** Block Id */
@@ -220,6 +343,14 @@ export interface components {
             span_ids: string[];
             /** @default proposed */
             status: components["schemas"]["CorrectionStatus"];
+        };
+        /** CorrectionResponse */
+        CorrectionResponse: {
+            /** Derived Text */
+            derived_text: string;
+            /** Job Revision */
+            job_revision: number;
+            patch: components["schemas"]["CorrectionPatch"];
         };
         /**
          * CorrectionStatus
@@ -254,6 +385,49 @@ export interface components {
             /** Width */
             width: number;
         };
+        /** EvaluationAggregate */
+        EvaluationAggregate: {
+            corrected?: components["schemas"]["EvaluationMetrics"] | null;
+            raw: components["schemas"]["EvaluationMetrics"];
+        };
+        /** EvaluationDiff */
+        EvaluationDiff: {
+            /** Corrected */
+            corrected: string;
+            /**
+             * Label
+             * @enum {string}
+             */
+            label: "improvement" | "regression" | "unchanged";
+            /** Original */
+            original: string;
+        };
+        /** EvaluationMetrics */
+        EvaluationMetrics: {
+            /** Cer */
+            cer: number;
+            /** Wer */
+            wer: number;
+        };
+        /** EvaluationSample */
+        EvaluationSample: {
+            corrected?: components["schemas"]["EvaluationMetrics"] | null;
+            /** Correction Count */
+            correction_count: number;
+            /** Elapsed Ms */
+            elapsed_ms: number;
+            /** Id */
+            id: string;
+            /** Labels */
+            labels?: string[];
+            /** Page Count */
+            page_count: number;
+            raw: components["schemas"]["EvaluationMetrics"];
+            /** Representative Diffs */
+            representative_diffs?: components["schemas"]["EvaluationDiff"][];
+            /** Title */
+            title: string;
+        };
         /** ExtractedEntity */
         ExtractedEntity: {
             /** Citations */
@@ -270,6 +444,15 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HostedProviderCapabilities */
+        HostedProviderCapabilities: {
+            /** Enabled */
+            enabled: boolean;
+            /** Remaining Documents */
+            remaining_documents: number;
+            /** Reset At */
+            reset_at: string | null;
         };
         /** IntelligenceItem */
         IntelligenceItem: {
@@ -345,6 +528,33 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** PublicEvaluation */
+        PublicEvaluation: {
+            aggregate: components["schemas"]["EvaluationAggregate"] | null;
+            /** Correction Provider */
+            correction_provider: string;
+            /** Engine */
+            engine: string;
+            /** Generated From Manifest Sha256 */
+            generated_from_manifest_sha256: string;
+            /** Limitations */
+            limitations: string[];
+            /** Measured */
+            measured: boolean;
+            /** Methodology */
+            methodology: string[];
+            /** Preprocessing Profile */
+            preprocessing_profile: string;
+            /** Run Environment */
+            run_environment: string;
+            /** Samples */
+            samples: components["schemas"]["EvaluationSample"][];
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+        };
         /** PublicSample */
         PublicSample: {
             /** Description */
@@ -389,6 +599,46 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    get_capabilities_api_v1_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Capabilities"];
+                };
+            };
+        };
+    };
+    get_evaluation_api_v1_evaluation_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicEvaluation"];
+                };
+            };
+        };
+    };
     live_api_v1_health_live_get: {
         parameters: {
             query?: never;
@@ -526,6 +776,77 @@ export interface operations {
             };
         };
     };
+    run_ai_correction_api_v1_jobs__job_id__ai_correction_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_correction_api_v1_jobs__job_id__corrections__patch_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+                patch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorrectionDecision"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorrectionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_document_api_v1_jobs__job_id__document_get: {
         parameters: {
             query?: never;
@@ -563,6 +884,38 @@ export interface operations {
             header?: never;
             path: {
                 job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_document_api_v1_jobs__job_id__exports__export_format__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+                export_format: string;
             };
             cookie?: never;
         };

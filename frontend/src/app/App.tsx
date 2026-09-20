@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { ApiProblem, api } from "../api/client";
@@ -9,12 +9,19 @@ import { UploadDropzone } from "../features/home/UploadDropzone";
 import { JobProgress } from "../features/jobs/JobProgress";
 import { ByokForm } from "../features/jobs/ByokForm";
 import { useJob } from "../features/jobs/useJob";
+import { EvaluationDashboard } from "../features/evaluation/EvaluationDashboard";
 import { IntelligenceReport } from "../features/report/IntelligenceReport";
 
 type Readiness = {
   status: string;
   environment: string;
 };
+
+function jobIdFromLocation(): string | null {
+  if (typeof window === "undefined") return null;
+  const match = window.location.pathname.match(/^\/jobs\/([A-Za-z0-9_-]{1,80})$/);
+  return match?.[1] ?? null;
+}
 
 export function App() {
   const readiness = useQuery({
@@ -27,7 +34,7 @@ export function App() {
     queryFn: () => api.get<PublicSample[]>("/samples"),
     retry: false,
   });
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(jobIdFromLocation);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [busyPatchId, setBusyPatchId] = useState<string | null>(null);
@@ -41,10 +48,22 @@ export function App() {
   });
   const sampleList = Array.isArray(samples.data) ? samples.data : [];
 
+  useEffect(() => {
+    const handlePopState = () => setActiveJobId(jobIdFromLocation());
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   function showWorkspace() {
     window.setTimeout(() => {
       window.document.getElementById("workspace")?.scrollIntoView({ behavior: "smooth" });
     }, 0);
+  }
+
+  function openJob(jobId: string) {
+    setActiveJobId(jobId);
+    window.history.pushState({}, "", "/jobs/" + jobId);
+    showWorkspace();
   }
 
   async function startSample(sample: PublicSample) {
@@ -54,8 +73,7 @@ export function App() {
       const form = new FormData();
       form.set("sample_id", sample.id);
       const created = await api.post<JobStatus>("/jobs", { body: form });
-      setActiveJobId(created.id);
-      showWorkspace();
+      openJob(created.id);
     } catch (error) {
       setActionError(error instanceof ApiProblem ? error.message : "The sample could not start.");
     } finally {
@@ -70,8 +88,7 @@ export function App() {
       const form = new FormData();
       form.set("file", file);
       const created = await api.post<JobStatus>("/jobs", { body: form });
-      setActiveJobId(created.id);
-      showWorkspace();
+      openJob(created.id);
     } catch (error) {
       setActionError(error instanceof ApiProblem ? error.message : "The upload could not start.");
     } finally {
@@ -174,19 +191,19 @@ export function App() {
               <div className="sheet-stamp">
                 OCR
                 <br />
-                92.4%
+                RAW TEXT
               </div>
             </div>
             <div className="scan-card-footer">
-              <span>3 pages</span>
-              <span>14 corrections</span>
-              <span>4.8s</span>
+              <span>1 page</span>
+              <span>confidence bands</span>
+              <span>source cited</span>
             </div>
           </div>
           <div className="floating-metric">
-            <span className="metric-label">CORRECTION PRECISION</span>
-            <strong>96.8%</strong>
-            <span className="metric-trend">↑ measured on sample set</span>
+            <span className="metric-label">EVALUATION SURFACE</span>
+            <strong>CER / WER</strong>
+            <span className="metric-trend">raw vs corrected</span>
           </div>
         </div>
       </section>
@@ -247,6 +264,7 @@ export function App() {
       </section>
 
       <SampleGallery samples={sampleList} onRun={startSample} busyId={busyId} />
+      <EvaluationDashboard />
     </main>
   );
 }

@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     environment: str = "development"
     redis_url: str = "redis://localhost:6379/0"
     workspace_root: Path = Path(".data/jobs")
+    frontend_dist: Path | None = None
+    evaluation_results_path: Path = Path("evaluation/public-results.json")
     artifact_ttl_seconds: int = Field(default=3600, ge=300, le=86400)
     max_upload_bytes: int = Field(default=15_000_000, ge=1_000_000)
     max_pdf_pages: int = Field(default=12, ge=1, le=50)

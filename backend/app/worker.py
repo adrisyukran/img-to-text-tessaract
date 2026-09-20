@@ -69,7 +69,10 @@ def process_hosted_job(job_id: str) -> None:
         preprocessor=preprocess_page,
         ocr_engine=TesseractEngine(),
         correction_service=None,
-        artifact_builder=CanonicalArtifactBuilder(),
+        artifact_builder=CanonicalArtifactBuilder(
+            settings.max_upload_bytes,
+            settings.max_pdf_pages,
+        ),
         intelligence_service=build_basic_report,
     )
     process_document(job_id, services)

@@ -9,11 +9,10 @@
     "test": "vitest",
     "generate:api": "openapi-typescript openapi.json -o src/api/generated.ts",
     "check:api": "npm run generate:api && git diff --exit-code -- src/api/generated.ts openapi.json",
-    "lint": "eslint ."
+    "lint": "tsc -b --pretty false"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.66.0",
-    "img-to-text-converter": "file:..",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.5"

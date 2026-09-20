@@ -5,6 +5,7 @@ const stages: Array<{ id: JobStage; label: string; hint: string }> = [
   { id: "preprocessing", label: "Prepare", hint: "Normalizing contrast and skew" },
   { id: "ocr", label: "Recognize", hint: "Reading words and confidence" },
   { id: "correction", label: "Correct", hint: "Proposing bounded, reversible edits" },
+  { id: "intelligence", label: "Explain", hint: "Citing a source-grounded report" },
   { id: "exports", label: "Package", hint: "Building a portable document" },
 ];
 
@@ -14,6 +15,7 @@ const stageOrder: JobStage[] = [
   "preprocessing",
   "ocr",
   "correction",
+  "intelligence",
   "exports",
   "complete",
 ];
@@ -52,16 +54,15 @@ export function JobProgress({ job }: { job: JobStatus }) {
         {currentLabel}
         {pageStatus}
       </p>
-      <div
+      <progress
         className="job-progress-track"
-        role="progressbar"
+        value={Math.round(job.progress * 100)}
+        max={100}
         aria-valuenow={Math.round(job.progress * 100)}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label="Document processing progress"
-      >
-        <span style={{ width: Math.round(job.progress * 100) + "%" }} />
-      </div>
+      />
       <ol className="job-stages">
         {stages.map((stage, index) => {
           const state = stageState(stage.id, job.stage);
@@ -73,7 +74,7 @@ export function JobProgress({ job }: { job: JobStatus }) {
                 <small>{stage.hint}</small>
               </span>
               <span className="job-stage-check" aria-hidden="true">
-                {state === "done" ? "✓" : state === "active" ? "•" : "—"}
+                {state === "done" ? "✓" : state === "active" ? "•" : ""}
               </span>
             </li>
           );

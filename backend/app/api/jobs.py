@@ -18,6 +18,7 @@ from backend.app.core.rate_limit import QuotaExceeded, RedisQuotaLimiter
 from backend.app.domain.document import CanonicalDocument, CorrectionPatch, CorrectionStatus
 from backend.app.domain.jobs import JobRecord, JobStage
 from backend.app.exports.digital import DIGITAL_EXPORTERS
+from backend.app.exports.searchable_pdf import SearchablePdfExporter
 from backend.app.ingestion.validation import UploadLimits, UploadProblem, validate_upload
 from backend.app.pipeline.correction import (
     CorrectionRequest,
@@ -449,13 +450,6 @@ def export_document(request: Request, job_id: str, export_format: str) -> Respon
     record = _get_record(request, job_id)
     if isinstance(record, JSONResponse):
         return record
-    exporter = DIGITAL_EXPORTERS.get(export_format)
-    if exporter is None:
-        return problem(
-            404,
-            "export_not_supported",
-            "The requested export format is not supported.",
-        )
     document = _repository(request).get_document(job_id)
     if document is None:
         return problem(
@@ -464,6 +458,59 @@ def export_document(request: Request, job_id: str, export_format: str) -> Respon
             "The document result is not ready yet.",
             retryable=True,
             stage=record.stage,
+        )
+    if export_format == "pdf":
+        workspace_root = Path(_settings(request).workspace_root).resolve()
+        input_dir = (workspace_root / job_id / "input").resolve()
+        if not input_dir.is_relative_to(workspace_root) or not input_dir.is_dir():
+            return problem(
+                409,
+                "export_unavailable",
+                "The original source is no longer available for PDF generation.",
+                retryable=True,
+            )
+        input_files = [path for path in input_dir.iterdir() if path.is_file()]
+        if len(input_files) != 1:
+            return problem(
+                409,
+                "export_unavailable",
+                "The original source is no longer available for PDF generation.",
+                retryable=True,
+            )
+        try:
+            source = validate_upload(
+                input_files[0].read_bytes(),
+                input_files[0].name,
+                "application/octet-stream",
+                UploadLimits(
+                    _settings(request).max_upload_bytes,
+                    _settings(request).max_pdf_pages,
+                ),
+            )
+            payload = SearchablePdfExporter().export(document, source, [])
+        except (OSError, UploadProblem):
+            return problem(
+                409,
+                "export_unavailable",
+                "The searchable PDF could not be generated.",
+                retryable=True,
+            )
+        return Response(
+            content=payload,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": 'attachment; filename="document.pdf"',
+                "X-Content-Type-Options": "nosniff",
+                "Cache-Control": "private, no-store",
+            },
+        )
+
+    exporter = DIGITAL_EXPORTERS.get(export_format)
+    if exporter is None:
+        return problem(
+            404,
+            "export_not_supported",
+            "The requested export format is not supported.",
         )
     return Response(
         content=exporter.export(document),

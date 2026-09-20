@@ -3,6 +3,7 @@ const formats = [
   ["html", "HTML"],
   ["json", "Canonical JSON"],
   ["docx", "DOCX"],
+  ["pdf", "Searchable PDF"],
 ] as const;
 
 export function ExportMenu({ jobId }: { jobId: string }) {

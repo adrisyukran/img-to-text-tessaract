@@ -108,3 +108,39 @@ export type CanonicalDocument = {
   corrections: CorrectionPatch[];
   report: IntelligenceReport | null;
 };
+
+export type EvaluationMetrics = {
+  cer: number;
+  wer: number;
+};
+
+export type EvaluationResult = {
+  schema_version: "1.0";
+  measured: boolean;
+  generated_from_manifest_sha256: string;
+  engine: string;
+  preprocessing_profile: string;
+  correction_provider: string;
+  run_environment: string;
+  aggregate: {
+    raw: EvaluationMetrics;
+    corrected: EvaluationMetrics | null;
+  } | null;
+  samples: Array<{
+    id: string;
+    title: string;
+    labels: string[];
+    page_count: number;
+    elapsed_ms: number;
+    raw: EvaluationMetrics;
+    corrected: EvaluationMetrics | null;
+    correction_count: number;
+    representative_diffs: Array<{
+      original: string;
+      corrected: string;
+      label: "improvement" | "regression" | "unchanged";
+    }>;
+  }>;
+  methodology: string[];
+  limitations: string[];
+};

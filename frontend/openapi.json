@@ -1,6 +1,69 @@
 {
   "components": {
     "schemas": {
+      "AIRunRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "api_key": {
+            "anyOf": [
+              {
+                "format": "password",
+                "type": "string",
+                "writeOnly": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key"
+          },
+          "provider": {
+            "default": "openai_compatible",
+            "enum": [
+              "gemini",
+              "openai_compatible"
+            ],
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "title": "AIRunRequest",
+        "type": "object"
+      },
+      "AIRunResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "job_revision": {
+            "title": "Job Revision",
+            "type": "integer"
+          },
+          "patches": {
+            "items": {
+              "$ref": "#/components/schemas/CorrectionPatch"
+            },
+            "title": "Patches",
+            "type": "array"
+          },
+          "remaining_hosted_documents": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining Hosted Documents"
+          }
+        },
+        "required": [
+          "patches",
+          "job_revision",
+          "remaining_hosted_documents"
+        ],
+        "title": "AIRunResponse",
+        "type": "object"
+      },
       "BlockKind": {
         "enum": [
           "heading",
@@ -131,6 +194,66 @@
         "title": "CanonicalDocument",
         "type": "object"
       },
+      "Capabilities": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted_media_types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Accepted Media Types",
+            "type": "array"
+          },
+          "artifact_ttl_seconds": {
+            "exclusiveMinimum": 0.0,
+            "title": "Artifact Ttl Seconds",
+            "type": "integer"
+          },
+          "byok_providers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Byok Providers",
+            "type": "array"
+          },
+          "hosted_provider": {
+            "$ref": "#/components/schemas/HostedProviderCapabilities"
+          },
+          "max_pdf_pages": {
+            "exclusiveMinimum": 0.0,
+            "title": "Max Pdf Pages",
+            "type": "integer"
+          },
+          "max_upload_bytes": {
+            "exclusiveMinimum": 0.0,
+            "title": "Max Upload Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "accepted_media_types",
+          "max_upload_bytes",
+          "max_pdf_pages",
+          "artifact_ttl_seconds",
+          "hosted_provider",
+          "byok_providers"
+        ],
+        "title": "Capabilities",
+        "type": "object"
+      },
+      "CorrectionDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/CorrectionStatus"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "CorrectionDecision",
+        "type": "object"
+      },
       "CorrectionPatch": {
         "additionalProperties": false,
         "properties": {
@@ -190,6 +313,29 @@
           "model_confidence"
         ],
         "title": "CorrectionPatch",
+        "type": "object"
+      },
+      "CorrectionResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "derived_text": {
+            "title": "Derived Text",
+            "type": "string"
+          },
+          "job_revision": {
+            "title": "Job Revision",
+            "type": "integer"
+          },
+          "patch": {
+            "$ref": "#/components/schemas/CorrectionPatch"
+          }
+        },
+        "required": [
+          "patch",
+          "derived_text",
+          "job_revision"
+        ],
+        "title": "CorrectionResponse",
         "type": "object"
       },
       "CorrectionStatus": {
@@ -294,6 +440,148 @@
         "title": "DocumentPage",
         "type": "object"
       },
+      "EvaluationAggregate": {
+        "additionalProperties": false,
+        "properties": {
+          "corrected": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvaluationMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "raw": {
+            "$ref": "#/components/schemas/EvaluationMetrics"
+          }
+        },
+        "required": [
+          "raw"
+        ],
+        "title": "EvaluationAggregate",
+        "type": "object"
+      },
+      "EvaluationDiff": {
+        "additionalProperties": false,
+        "properties": {
+          "corrected": {
+            "title": "Corrected",
+            "type": "string"
+          },
+          "label": {
+            "enum": [
+              "improvement",
+              "regression",
+              "unchanged"
+            ],
+            "title": "Label",
+            "type": "string"
+          },
+          "original": {
+            "title": "Original",
+            "type": "string"
+          }
+        },
+        "required": [
+          "original",
+          "corrected",
+          "label"
+        ],
+        "title": "EvaluationDiff",
+        "type": "object"
+      },
+      "EvaluationMetrics": {
+        "additionalProperties": false,
+        "properties": {
+          "cer": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Cer",
+            "type": "number"
+          },
+          "wer": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Wer",
+            "type": "number"
+          }
+        },
+        "required": [
+          "cer",
+          "wer"
+        ],
+        "title": "EvaluationMetrics",
+        "type": "object"
+      },
+      "EvaluationSample": {
+        "additionalProperties": false,
+        "properties": {
+          "corrected": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvaluationMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "correction_count": {
+            "minimum": 0.0,
+            "title": "Correction Count",
+            "type": "integer"
+          },
+          "elapsed_ms": {
+            "minimum": 0.0,
+            "title": "Elapsed Ms",
+            "type": "number"
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "array"
+          },
+          "page_count": {
+            "minimum": 1.0,
+            "title": "Page Count",
+            "type": "integer"
+          },
+          "raw": {
+            "$ref": "#/components/schemas/EvaluationMetrics"
+          },
+          "representative_diffs": {
+            "items": {
+              "$ref": "#/components/schemas/EvaluationDiff"
+            },
+            "title": "Representative Diffs",
+            "type": "array"
+          },
+          "title": {
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "page_count",
+          "elapsed_ms",
+          "raw",
+          "correction_count"
+        ],
+        "title": "EvaluationSample",
+        "type": "object"
+      },
       "ExtractedEntity": {
         "additionalProperties": false,
         "properties": {
@@ -343,6 +631,39 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HostedProviderCapabilities": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "remaining_documents": {
+            "minimum": 0.0,
+            "title": "Remaining Documents",
+            "type": "integer"
+          },
+          "reset_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reset At"
+          }
+        },
+        "required": [
+          "enabled",
+          "remaining_documents",
+          "reset_at"
+        ],
+        "title": "HostedProviderCapabilities",
         "type": "object"
       },
       "IntelligenceItem": {
@@ -578,6 +899,91 @@
         "title": "OCRSpan",
         "type": "object"
       },
+      "PublicEvaluation": {
+        "additionalProperties": false,
+        "properties": {
+          "aggregate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvaluationAggregate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "correction_provider": {
+            "minLength": 1,
+            "title": "Correction Provider",
+            "type": "string"
+          },
+          "engine": {
+            "minLength": 1,
+            "title": "Engine",
+            "type": "string"
+          },
+          "generated_from_manifest_sha256": {
+            "minLength": 1,
+            "title": "Generated From Manifest Sha256",
+            "type": "string"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Limitations",
+            "type": "array"
+          },
+          "measured": {
+            "title": "Measured",
+            "type": "boolean"
+          },
+          "methodology": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Methodology",
+            "type": "array"
+          },
+          "preprocessing_profile": {
+            "minLength": 1,
+            "title": "Preprocessing Profile",
+            "type": "string"
+          },
+          "run_environment": {
+            "minLength": 1,
+            "title": "Run Environment",
+            "type": "string"
+          },
+          "samples": {
+            "items": {
+              "$ref": "#/components/schemas/EvaluationSample"
+            },
+            "title": "Samples",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "measured",
+          "generated_from_manifest_sha256",
+          "engine",
+          "preprocessing_profile",
+          "correction_provider",
+          "run_environment",
+          "aggregate",
+          "samples",
+          "methodology",
+          "limitations"
+        ],
+        "title": "PublicEvaluation",
+        "type": "object"
+      },
       "PublicSample": {
         "additionalProperties": false,
         "properties": {
@@ -695,6 +1101,48 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/capabilities": {
+      "get": {
+        "operationId": "get_capabilities_api_v1_capabilities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Capabilities"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Capabilities",
+        "tags": [
+          "capabilities"
+        ]
+      }
+    },
+    "/api/v1/evaluation": {
+      "get": {
+        "operationId": "get_evaluation_api_v1_evaluation_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicEvaluation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Evaluation",
+        "tags": [
+          "evaluation"
+        ]
+      }
+    },
     "/api/v1/health/live": {
       "get": {
         "operationId": "live_api_v1_health_live_get",
@@ -860,6 +1308,119 @@
         ]
       }
     },
+    "/api/v1/jobs/{job_id}/ai-correction": {
+      "post": {
+        "operationId": "run_ai_correction_api_v1_jobs__job_id__ai_correction_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AIRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Ai Correction",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/jobs/{job_id}/corrections/{patch_id}": {
+      "patch": {
+        "operationId": "decide_correction_api_v1_jobs__job_id__corrections__patch_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "patch_id",
+            "required": true,
+            "schema": {
+              "title": "Patch Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectionDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorrectionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Correction",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
     "/api/v1/jobs/{job_id}/document": {
       "get": {
         "operationId": "get_document_api_v1_jobs__job_id__document_get",
@@ -939,6 +1500,55 @@
           }
         },
         "summary": "Job Events",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/jobs/{job_id}/exports/{export_format}": {
+      "get": {
+        "operationId": "export_document_api_v1_jobs__job_id__exports__export_format__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "export_format",
+            "required": true,
+            "schema": {
+              "title": "Export Format",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Document",
         "tags": [
           "jobs"
         ]

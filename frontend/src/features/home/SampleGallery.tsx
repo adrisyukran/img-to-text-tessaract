@@ -15,7 +15,7 @@ export function SampleGallery({ samples, onRun, busyId = null }: SampleGalleryPr
           <h2 id="sample-heading">Three scans. One inspectable pipeline.</h2>
         </div>
         <p className="section-note">
-          Every sample has ground truth, so the result is more than a demo—it is a measurable
+          Every sample has ground truth, so the result is more than a demo. It is a measurable
           experiment.
         </p>
       </div>

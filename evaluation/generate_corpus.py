@@ -1,10 +1,12 @@
 import argparse
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pymupdf
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from reportlab.lib.utils import ImageReader  # type: ignore[import-untyped]
 from reportlab.pdfgen import canvas  # type: ignore[import-untyped]
@@ -108,23 +110,40 @@ def _write_pdf(image: Image.Image, destination: Path) -> None:
     pdf.showPage()
     pdf.save()
     png_path.unlink()
+    source = pymupdf.open(destination)  # type: ignore[no-untyped-call]
+    metadata: dict[str, str] = dict(source.metadata or {})
+    metadata.update({"creationDate": "", "modDate": "", "producer": "Scanned PDF Intelligence"})
+    source.set_metadata(metadata)
+    temporary = destination.with_suffix(".normalized.pdf")
+    source.save(temporary, garbage=4, deflate=True, no_new_id=True, reproducible=True)  # type: ignore[no-untyped-call]
+    source.close()  # type: ignore[no-untyped-call]
+    normalized = temporary.read_bytes()
+    normalized = re.sub(
+        rb"/ID\[<[^>]+><[^>]+>\]",
+        b"/ID[<00000000000000000000000000000000><00000000000000000000000000000000>]",
+        normalized,
+    )
+    temporary.write_bytes(normalized)
+    temporary.replace(destination)
 
 
-def generate(replace: bool = False) -> Path:
-    CORPUS.mkdir(parents=True, exist_ok=True)
-    GROUND_TRUTH.mkdir(parents=True, exist_ok=True)
-    manifest_path = CORPUS / "manifest.json"
+def generate(replace: bool = False, root: Path = ROOT) -> Path:
+    corpus = root / "corpus"
+    ground_truth = root / "ground_truth"
+    corpus.mkdir(parents=True, exist_ok=True)
+    ground_truth.mkdir(parents=True, exist_ok=True)
+    manifest_path = corpus / "manifest.json"
     outputs = [manifest_path]
     for sample in SAMPLES:
-        outputs.extend([CORPUS / sample.filename, GROUND_TRUTH / sample.truth])
+        outputs.extend([corpus / sample.filename, ground_truth / sample.truth])
     if not replace and any(path.exists() for path in outputs):
         raise FileExistsError("corpus exists; use --replace to regenerate it")
 
     for sample in SAMPLES:
         text = sample.text
-        (GROUND_TRUTH / sample.truth).write_text(text + "\n", encoding="utf-8")
+        (ground_truth / sample.truth).write_text(text + "\n", encoding="utf-8")
         image = _transform(_page_image(text, sample.title.upper()), sample.id)
-        _write_pdf(image, CORPUS / sample.filename)
+        _write_pdf(image, corpus / sample.filename)
 
     manifest = {
         "schema_version": "1.0",

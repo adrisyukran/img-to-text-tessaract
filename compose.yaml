@@ -1,0 +1,89 @@
+services:
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    security_opt:
+      - no-new-privileges:true
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    command: ["api"]
+    depends_on:
+      redis:
+        condition: service_started
+    environment:
+      OCR_ENVIRONMENT: production
+      OCR_REDIS_URL: redis://redis:6379/0
+      OCR_HOSTED_PROVIDER_ENABLED: ${OCR_HOSTED_PROVIDER_ENABLED:-false}
+      OCR_HOSTED_PROVIDER_BASE_URL: ${OCR_HOSTED_PROVIDER_BASE_URL:-}
+      OCR_HOSTED_PROVIDER_MODEL: ${OCR_HOSTED_PROVIDER_MODEL:-}
+      OCR_HOSTED_PROVIDER_API_KEY: ${OCR_HOSTED_PROVIDER_API_KEY:-}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/app/.venv/bin/python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health/ready')",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - job-data:/data/jobs
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    command: ["worker"]
+    depends_on:
+      redis:
+        condition: service_started
+    environment:
+      OCR_ENVIRONMENT: production
+      OCR_REDIS_URL: redis://redis:6379/0
+      OCR_HOSTED_PROVIDER_ENABLED: ${OCR_HOSTED_PROVIDER_ENABLED:-false}
+      OCR_HOSTED_PROVIDER_BASE_URL: ${OCR_HOSTED_PROVIDER_BASE_URL:-}
+      OCR_HOSTED_PROVIDER_MODEL: ${OCR_HOSTED_PROVIDER_MODEL:-}
+      OCR_HOSTED_PROVIDER_API_KEY: ${OCR_HOSTED_PROVIDER_API_KEY:-}
+    volumes:
+      - job-data:/data/jobs
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  cleanup:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    command: ["cleanup"]
+    depends_on:
+      redis:
+        condition: service_started
+    environment:
+      OCR_ENVIRONMENT: production
+      OCR_REDIS_URL: redis://redis:6379/0
+    volumes:
+      - job-data:/data/jobs
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  job-data:
+  redis-data:

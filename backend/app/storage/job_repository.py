@@ -182,6 +182,15 @@ class JobRepository:
             for value in values
         ]
 
+    def job_ids(self) -> list[str]:
+        ids: list[str] = []
+        for raw_key in self.redis.scan_iter(match="job:*"):
+            key = self._text(raw_key)
+            if key.endswith(":document") or key.endswith(":events"):
+                continue
+            ids.append(key.removeprefix("job:"))
+        return ids
+
     def _publish(self, record: JobRecord) -> None:
         payload = record.model_dump_json()
         self.redis.publish(self._channel(record.id), payload)

@@ -12,7 +12,14 @@ from backend.app.domain.document import (
     IntelligenceReport,
 )
 from backend.app.domain.jobs import JobRecord, JobStage
-from backend.app.ingestion.validation import UploadProblem, ValidatedUpload
+from backend.app.exports.digital import DIGITAL_EXPORTERS
+from backend.app.exports.searchable_pdf import SearchablePdfExporter
+from backend.app.ingestion.validation import (
+    UploadLimits,
+    UploadProblem,
+    ValidatedUpload,
+    validate_upload,
+)
 from backend.app.pipeline.layout import group_spans
 from backend.app.pipeline.ocr import OCREngine, OCRProblem
 from backend.app.pipeline.preprocess import PreprocessedPage
@@ -44,10 +51,35 @@ class ArtifactBuilder(Protocol):
 
 
 class CanonicalArtifactBuilder:
+    def __init__(self, max_upload_bytes: int = 15_000_000, max_pdf_pages: int = 12) -> None:
+        self.limits = UploadLimits(max_upload_bytes, max_pdf_pages)
+
     def build(self, document: CanonicalDocument, workspace: JobWorkspace) -> list[str]:
         target = workspace.artifact_path("document_json")
         target.write_text(document.model_dump_json(indent=2), encoding="utf-8")
-        return ["document_json"]
+        keys = ["document_json"]
+        export_keys = {
+            "markdown": "document_markdown",
+            "html": "document_html",
+            "docx": "document_docx",
+        }
+        for format_name, key in export_keys.items():
+            export_path = workspace.artifact_path(key)
+            export_path.write_bytes(DIGITAL_EXPORTERS[format_name].export(document))
+            keys.append(key)
+
+        input_files = [path for path in workspace.input_dir.iterdir() if path.is_file()]
+        if len(input_files) == 1:
+            source = validate_upload(
+                input_files[0].read_bytes(),
+                input_files[0].name,
+                "application/octet-stream",
+                self.limits,
+            )
+            searchable = SearchablePdfExporter().export(document, source, [])
+            workspace.artifact_path("searchable_pdf").write_bytes(searchable)
+            keys.append("searchable_pdf")
+        return keys
 
 
 UploadLoader = Callable[[JobRecord, JobWorkspace], ValidatedUpload]

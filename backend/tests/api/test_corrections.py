@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import fakeredis
+import pymupdf
 from fastapi.testclient import TestClient
 
 from backend.app.core.config import Settings
@@ -60,6 +61,14 @@ def make_document() -> CanonicalDocument:
         ],
     )
     return document.model_copy(update={"corrections": patch})
+
+
+def make_source_pdf() -> bytes:
+    source = pymupdf.open()
+    source.new_page(width=200, height=200)
+    payload = source.tobytes()
+    source.close()
+    return payload
 
 
 def make_client(tmp_path: Path) -> tuple[TestClient, JobRepository]:
@@ -145,6 +154,23 @@ def test_exports_are_fixed_attachments(tmp_path: Path) -> None:
     assert response.headers["x-content-type-options"] == "nosniff"
     assert "Invoice" not in response.text
     assert "lnvoice" in response.text
+
+
+def test_searchable_pdf_export_preserves_source_and_adds_text_layer(tmp_path: Path) -> None:
+    client, _ = make_client(tmp_path)
+    input_dir = tmp_path / "job-1" / "input"
+    input_dir.mkdir(parents=True)
+    (input_dir / "scan.pdf").write_bytes(make_source_pdf())
+
+    with client:
+        response = client.get("/api/v1/jobs/job-1/exports/pdf")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.headers["content-disposition"] == 'attachment; filename="document.pdf"'
+    exported = pymupdf.open(stream=response.content, filetype="pdf")
+    assert "lnvoice" in exported[0].get_text()
+    exported.close()
 
 
 class FakeProvider:
