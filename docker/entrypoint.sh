@@ -1,4 +1,5 @@
 #!/bin/sh
+# Keep the container process selection explicit and shell-portable.
 set -eu
 
 if [ "$#" -ne 1 ]; then
