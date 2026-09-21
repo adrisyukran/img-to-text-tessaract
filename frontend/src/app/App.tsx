@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { ApiProblem, api } from "../api/client";
-import type { CanonicalDocument, JobStatus, PublicSample } from "../api/types";
+import type { Capabilities, CanonicalDocument, JobStatus, PublicSample } from "../api/types";
 import { RawResult } from "../features/document/RawResult";
 import { SampleGallery } from "../features/home/SampleGallery";
 import { UploadDropzone } from "../features/home/UploadDropzone";
@@ -32,6 +32,11 @@ export function App() {
   const samples = useQuery({
     queryKey: ["samples"],
     queryFn: () => api.get<PublicSample[]>("/samples"),
+    retry: false,
+  });
+  const capabilities = useQuery({
+    queryKey: ["capabilities"],
+    queryFn: () => api.get<Capabilities>("/capabilities"),
     retry: false,
   });
   const [activeJobId, setActiveJobId] = useState<string | null>(jobIdFromLocation);
@@ -114,15 +119,17 @@ export function App() {
     }
   }
 
-  async function runByok(
+  async function runAiCorrection(
     provider: "gemini" | "openai_compatible",
-    apiKey: string,
+    apiKey?: string,
   ): Promise<void> {
     if (!activeJobId) return;
     setActionError(null);
+    const body: { provider: "gemini" | "openai_compatible"; api_key?: string } = { provider };
+    if (apiKey) body.api_key = apiKey;
     try {
       await api.post("/jobs/" + activeJobId + "/ai-correction", {
-        body: JSON.stringify({ provider, api_key: apiKey }),
+        body: JSON.stringify(body),
         headers: { "Content-Type": "application/json" },
       });
       await documentQuery.refetch();
@@ -130,8 +137,12 @@ export function App() {
       setActionError(
         error instanceof ApiProblem ? error.message : "The AI correction could not be completed.",
       );
+    } finally {
+      await capabilities.refetch();
     }
   }
+
+  const hostedProvider = capabilities.data?.hosted_provider;
 
   function showCitation(pageNumber: number, blockId: string) {
     window.document.getElementById("source-" + blockId)?.scrollIntoView({ behavior: "smooth" });
@@ -236,6 +247,13 @@ export function App() {
             workspace.
           </p>
         </div>
+        {hostedProvider?.enabled && (
+          <div className="hosted-quota-note" aria-live="polite">
+            <span>HOSTED AI DEMO</span>
+            <strong>{hostedProvider.remaining_documents} hosted runs remaining</strong>
+            <span>No account required · BYOK stays available</span>
+          </div>
+        )}
         <UploadDropzone onSubmit={uploadFile} busy={uploading} />
         {actionError && (
           <p className="action-error" role="alert">
@@ -249,7 +267,20 @@ export function App() {
           </p>
         )}
         {documentQuery.data && (
-          <ByokForm onSubmit={runByok} disabled={documentQuery.isFetching} />
+          <ByokForm
+            onSubmit={(provider, apiKey) => runAiCorrection(provider, apiKey)}
+            onHostedSubmit={() => runAiCorrection("openai_compatible")}
+            hostedProvider={
+              hostedProvider
+                ? {
+                    enabled: hostedProvider.enabled,
+                    remainingDocuments: hostedProvider.remaining_documents,
+                    resetAt: hostedProvider.reset_at,
+                  }
+                : undefined
+            }
+            disabled={documentQuery.isFetching}
+          />
         )}
         {documentQuery.data && (
           <>

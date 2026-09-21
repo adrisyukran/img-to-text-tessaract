@@ -1054,27 +1054,61 @@ h1 {
   margin-top: 22px;
 }
 
-.byok-form {
-  align-items: end;
+.hosted-quota-note {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  display: flex;
+  font-family: "DM Mono", monospace;
+  font-size: 0.64rem;
+  gap: 12px 24px;
+  letter-spacing: 0.06em;
+  margin-top: 32px;
+  padding: 12px 0;
+  text-transform: uppercase;
+}
+
+.hosted-quota-note strong {
+  color: var(--teal);
+  font-weight: 600;
+}
+
+.ai-correction-panel {
   background: rgba(27, 130, 119, 0.06);
   border: 1px solid rgba(27, 130, 119, 0.2);
-  display: grid;
-  gap: 13px;
-  grid-template-columns: minmax(170px, 0.8fr) minmax(145px, 0.5fr) minmax(190px, 0.8fr) auto;
   margin-top: 32px;
+}
+
+.hosted-ai-option {
+  align-items: end;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) auto;
   padding: 20px;
 }
 
+.hosted-ai-option h3,
 .byok-form h3 {
   font-size: 0.95rem;
   margin: 5px 0;
 }
 
+.hosted-ai-option p:not(.eyebrow),
 .byok-form p:not(.eyebrow) {
   color: var(--muted);
   font-size: 0.73rem;
   line-height: 1.4;
   margin: 0;
+}
+
+.byok-form {
+  align-items: end;
+  border-top: 1px solid rgba(27, 130, 119, 0.2);
+  display: grid;
+  gap: 13px;
+  grid-template-columns: minmax(170px, 0.8fr) minmax(145px, 0.5fr) minmax(190px, 0.8fr) auto;
+  padding: 20px;
 }
 
 .byok-form label {
@@ -1204,6 +1238,12 @@ h1 {
   .byok-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .hosted-quota-note {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
 }
 
 @media (max-width: 560px) {
@@ -1231,6 +1271,11 @@ h1 {
     align-items: stretch;
     display: flex;
     flex-direction: column;
+  }
+
+  .hosted-ai-option {
+    align-items: stretch;
+    grid-template-columns: 1fr;
   }
 
   .evaluation-metrics {

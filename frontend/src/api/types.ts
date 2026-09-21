@@ -7,6 +7,19 @@ export type PublicSample = {
   labels: string[];
 };
 
+export type Capabilities = {
+  accepted_media_types: string[];
+  max_upload_bytes: number;
+  max_pdf_pages: number;
+  artifact_ttl_seconds: number;
+  hosted_provider: {
+    enabled: boolean;
+    remaining_documents: number;
+    reset_at: string | null;
+  };
+  byok_providers: string[];
+};
+
 export type JobStage =
   | "queued"
   | "rendering"
