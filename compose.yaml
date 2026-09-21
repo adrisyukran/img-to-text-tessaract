@@ -24,7 +24,7 @@ services:
       OCR_HOSTED_PROVIDER_MODEL: ${OCR_HOSTED_PROVIDER_MODEL:-}
       OCR_HOSTED_PROVIDER_API_KEY: ${OCR_HOSTED_PROVIDER_API_KEY:-}
     ports:
-      - "8000:8000"
+      - "${OCR_HTTP_PORT:-8000}:8000"
     healthcheck:
       test:
         [
