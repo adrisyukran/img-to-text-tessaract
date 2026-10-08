@@ -13,6 +13,89 @@ body {
   font-family: "DM Sans", sans-serif;
 }
 
+.boot-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0 auto;
+  max-width: 880px;
+  min-height: 100svh;
+  padding: 32px clamp(24px, 8vw, 96px);
+}
+
+.boot-brand {
+  align-items: center;
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 700;
+  gap: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.boot-brand-mark {
+  align-items: center;
+  background: var(--ink);
+  border-radius: 50%;
+  color: var(--paper);
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.boot-eyebrow {
+  color: var(--accent-deep);
+  font-family: "DM Mono", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  margin: 44px 0 18px;
+}
+
+.boot-screen h1 {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: clamp(2.8rem, 7vw, 5.6rem);
+  font-weight: 500;
+  letter-spacing: -0.075em;
+  line-height: 0.98;
+  margin: 0;
+  max-width: 720px;
+}
+
+.boot-note {
+  color: var(--muted);
+  margin: 26px 0 20px;
+}
+
+.boot-progress {
+  background: var(--line);
+  display: block;
+  height: 2px;
+  max-width: 220px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.boot-progress span {
+  animation: boot-progress 1.4s ease-in-out infinite;
+  background: var(--teal);
+  display: block;
+  height: 100%;
+  width: 38%;
+}
+
+@keyframes boot-progress {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(270%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-progress span {
+    animation: none;
+    width: 100%;
+  }
+}
+
 button,
 a {
   font: inherit;

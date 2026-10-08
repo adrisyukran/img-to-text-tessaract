@@ -28,5 +28,16 @@ class SafeFrontendFiles(StaticFiles):
         if response.status_code == 404 and "." not in Path(path).name and directory is not None:
             index_path = Path(directory) / "index.html"
             if index_path.is_file():
-                return FileResponse(index_path, media_type="text/html")
+                return FileResponse(
+                    index_path,
+                    media_type="text/html",
+                    headers={"Cache-Control": "no-cache"},
+                )
+        if response.status_code == 200:
+            if response.media_type == "text/html":
+                response.headers["Cache-Control"] = "no-cache"
+            elif path.startswith("assets/"):
+                response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            elif path == "favicon.svg":
+                response.headers["Cache-Control"] = "public, max-age=86400"
         return response

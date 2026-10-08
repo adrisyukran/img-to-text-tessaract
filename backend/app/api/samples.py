@@ -13,8 +13,11 @@ router = APIRouter(prefix="/samples", tags=["samples"])
 
 
 @router.get("", response_model=list[PublicSample])
-def list_samples(request: Request) -> list[PublicSample]:
+def list_samples(request: Request, response: Response) -> list[PublicSample]:
     registry = cast(SampleRegistry, request.app.state.samples)
+    response.headers["Cache-Control"] = (
+        "public, max-age=60, s-maxage=300, stale-while-revalidate=60"
+    )
     return registry.public_samples()
 
 

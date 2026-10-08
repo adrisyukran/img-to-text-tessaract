@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Literal, cast
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -77,11 +77,11 @@ def _results_path(settings: Settings) -> Path:
 
 
 @router.get("", response_model=PublicEvaluation)
-def get_evaluation(request: Request) -> PublicEvaluation | JSONResponse:
+def get_evaluation(request: Request, response: Response) -> PublicEvaluation | JSONResponse:
     settings = cast(Settings, request.app.state.settings)
     try:
         payload = json.loads(_results_path(settings).read_text(encoding="utf-8"))
-        return PublicEvaluation.model_validate(payload)
+        result = PublicEvaluation.model_validate(payload)
     except (OSError, json.JSONDecodeError, TypeError, ValueError):
         return problem(
             503,
@@ -89,3 +89,7 @@ def get_evaluation(request: Request) -> PublicEvaluation | JSONResponse:
             "The public evaluation result is not available or is invalid.",
             retryable=True,
         )
+    response.headers["Cache-Control"] = (
+        "public, max-age=60, s-maxage=300, stale-while-revalidate=60"
+    )
+    return result
